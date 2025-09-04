@@ -21,63 +21,89 @@
             
             <!-- Auto-loading status -->
             <div class="mb-6 p-4 bg-blue-50 rounded-lg">
-                <div id="csv-status" class="text-sm text-gray-600">Caricamento automatico regole in corso...</div>
+                <div id="csv-status" class="text-sm text-gray-600">Auto-loading rules in progress...</div>
             </div>
             
             <!-- Manual upload fallback -->
             <div id="manual-upload-section" class="hidden">
                 <div id="drop-zone" class="border-2 border-dashed border-indigo-300 rounded-lg p-12 text-center cursor-pointer bg-indigo-50 hover:bg-indigo-100 transition-colors">
                     <div class="text-indigo-600 text-6xl mb-4">📁</div>
-                    <p class="text-xl text-indigo-700 font-medium mb-2">Trascina il file CSV qui</p>
-                    <p class="text-indigo-600 mb-4">oppure clicca per selezionare</p>
+                    <p class="text-xl text-indigo-700 font-medium mb-2">Drag CSV file here</p>
+                    <p class="text-indigo-600 mb-4">or click to select</p>
                     <input type="file" id="file-input" class="hidden" accept=".csv">
                     <button class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
-                        Seleziona File
+                        Select File
                     </button>
                 </div>
             </div>
             
             <div id="loading" class="hidden text-center py-8">
                 <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                <p class="mt-2 text-gray-600">Caricamento in corso...</p>
+                <p class="mt-2 text-gray-600">Loading...</p>
             </div>
         </div>
 
         <!-- Data Section -->
         <div id="data-section" class="hidden">
-            <!-- Two Column Layout -->
-            <div class="flex gap-6 min-h-screen">
+            <!-- Dynamic Layout Container -->
+            <div id="layout-container" class="flex gap-6 min-h-screen">
                 <!-- Left Column - Filters (40%) -->
-                <div class="w-[40%] flex flex-col">
+                <div id="filters-column" class="w-[40%] flex flex-col">
                     <!-- Filter Controls -->
                     <div class="bg-white rounded-2xl shadow-xl p-6">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-xl font-bold text-gray-800">🎛️ Filtri Regole</h3>
+                            <h3 class="text-xl font-bold text-gray-800">🎛️ Rule Filters</h3>
                             <button id="reset-filters" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium text-sm">
                                 🔄 Reset
                             </button>
                         </div>
                         <div id="filter-container" class="space-y-4 pb-4">
                             <div class="text-gray-500 text-center py-8">
-                                Caricamento filtri in corso...
+                                Loading filters...
                             </div>
                         </div>
                     </div>
 
-                    <!-- Debug Panel -->
-                    <div id="debug-panel" class="bg-gray-900 text-green-400 rounded-2xl shadow-xl p-4 mt-4 hidden font-mono text-xs" style="display: none;">
-                        <h3 class="text-sm font-bold mb-2 text-white">🐛 Debug</h3>
-                        <div id="debug-info" class="max-h-32 overflow-y-auto whitespace-pre-wrap"></div>
+                    <!-- Debug Panel - Hidden -->
+                    <div id="debug-panel" class="hidden bg-gray-900 text-green-400 rounded-2xl shadow-xl p-4 mt-4 font-mono text-xs">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-sm font-bold text-white">🐛 Debug Console</h3>
+                            <button id="clear-debug" class="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700">Clear</button>
+                        </div>
+                        <div id="debug-info" class="max-h-48 overflow-y-auto whitespace-pre-wrap bg-black p-2 rounded border"></div>
+                        
+                        <!-- Debug Status -->
+                        <div class="mt-3 p-2 bg-gray-800 rounded">
+                            <div class="text-white text-xs mb-1">Status:</div>
+                            <div id="debug-status" class="text-yellow-400 text-xs"></div>
+                        </div>
+                        
+                        <!-- Filter State -->
+                        <div class="mt-2 p-2 bg-gray-800 rounded">
+                            <div class="text-white text-xs mb-1">Active Filters:</div>
+                            <div id="active-filters-debug" class="text-cyan-400 text-xs"></div>
+                        </div>
+                        
+                        <!-- Available Filters -->
+                        <div class="mt-2 p-2 bg-gray-800 rounded">
+                            <div class="text-white text-xs mb-1">Available Filters:</div>
+                            <div id="available-filters-debug" class="text-green-400 text-xs max-h-24 overflow-y-auto"></div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Right Column - Results Table (60%) -->
-                <div class="w-[60%] flex flex-col">
+                <div id="results-column" class="w-[60%] flex flex-col">
                     <!-- Controls -->
                     <div class="bg-white rounded-2xl shadow-xl p-4 mb-4">
                         <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-bold text-gray-800">📋 Elenco Materiali</h3>
-                            <span id="row-count" class="text-gray-600 font-medium"></span>
+                            <h3 class="text-lg font-bold text-gray-800">📋 Materials List</h3>
+                            <div class="flex items-center gap-4">
+                                <button id="toggle-regola" class="px-3 py-1 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm">
+                                    📋 Show Rules
+                                </button>
+                                <span id="row-count" class="text-gray-600 font-medium"></span>
+                            </div>
                         </div>
                     </div>
 
@@ -94,14 +120,26 @@
                             </table>
                         </div>
                         
+                        <!-- Price Summary -->
+                        <div id="price-summary" class="bg-green-50 px-6 py-4 border-t border-green-200">
+                            <div class="flex items-center justify-between">
+                                <div class="text-green-800 font-medium">
+                                    <span id="visible-count">0</span> materials displayed
+                                </div>
+                                <div class="text-green-800 font-bold text-lg">
+                                    Page total: € <span id="total-price">0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- Pagination -->
                         <div class="bg-gray-50 px-6 py-4 flex items-center justify-between border-t">
                             <button id="prev-page" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-gray-400" disabled>
-                                ← Precedente
+                                ← Previous
                             </button>
                             <span id="page-info" class="text-gray-600 font-medium"></span>
                             <button id="next-page" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-gray-400" disabled>
-                                Successiva →
+                                Next →
                             </button>
                         </div>
                     </div>
@@ -112,6 +150,25 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Device detection and layout setup
+            const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const layoutContainer = document.getElementById('layout-container');
+            const filtersColumn = document.getElementById('filters-column');
+            const resultsColumn = document.getElementById('results-column');
+            
+            // Apply layout based on device
+            if (isMobile) {
+                // Mobile layout: vertical stack
+                layoutContainer.className = 'flex flex-col gap-6';
+                filtersColumn.className = 'w-full flex flex-col order-1';
+                resultsColumn.className = 'w-full flex flex-col order-2';
+            } else {
+                // Desktop layout: horizontal columns
+                layoutContainer.className = 'flex gap-6 min-h-screen';
+                filtersColumn.className = 'w-[40%] flex flex-col';
+                resultsColumn.className = 'w-[60%] flex flex-col';
+            }
+
             const dropZone = document.getElementById('drop-zone');
             const fileInput = document.getElementById('file-input');
             const loadingElement = document.getElementById('loading');
@@ -127,8 +184,15 @@
             const resetFiltersBtn = document.getElementById('reset-filters');
             const debugPanel = document.getElementById('debug-panel');
             const debugInfo = document.getElementById('debug-info');
+            const debugStatus = document.getElementById('debug-status');
+            const activeFiltersDebug = document.getElementById('active-filters-debug');
+            const availableFiltersDebug = document.getElementById('available-filters-debug');
+            const clearDebugBtn = document.getElementById('clear-debug');
             const csvStatus = document.getElementById('csv-status');
             const manualUploadSection = document.getElementById('manual-upload-section');
+            const toggleRegolaBtn = document.getElementById('toggle-regola');
+            const visibleCount = document.getElementById('visible-count');
+            const totalPrice = document.getElementById('total-price');
 
             let csvData = [];
             let headers = [];
@@ -139,7 +203,20 @@
             let activeFilters = {}; // Will store currently selected filter values
             let availableFilters = {}; // Will store available filter values based on current selection
             let debugLog = [];
+            let showRegolaColumn = false; // Toggle for REGOLA column visibility
+            // Price calculation will be done on visible rows only
 
+            // Setup debug panel
+            setupDebugPanel();
+            
+            // Handle window resize for responsive layout
+            window.addEventListener('resize', function() {
+                const newIsMobile = window.innerWidth <= 768;
+                if (newIsMobile !== isMobile) {
+                    location.reload(); // Simple solution: reload on layout change
+                }
+            });
+            
             // Auto-load CSV on startup
             loadRulesAutomatically();
 
@@ -189,33 +266,33 @@
                     if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
                         parseCSV(file);
                     } else {
-                        alert('Per favore carica un file CSV valido.');
+                        alert('Please upload a valid CSV file.');
                     }
                 }
             }
 
             // Auto-load function
             function loadRulesAutomatically() {
-                csvStatus.textContent = 'Caricamento automatico regole in corso...';
+                csvStatus.textContent = 'Auto-loading rules in progress...';
                 csvStatus.className = 'text-sm text-blue-600';
                 
                 fetch('regole-prodotto-WebApp-BX MOD KIT.csv')
                     .then(response => {
                         if (!response.ok) {
-                            throw new Error(`File non trovato: ${response.status}`);
+                            throw new Error(`File not found: ${response.status}`);
                         }
                         return response.text();
                     })
                     .then(content => {
                         parseCSVContent(content);
-                        csvStatus.textContent = '✅ Regole caricate automaticamente con successo dal server';
+                        csvStatus.textContent = '✅ Rules loaded automatically from server successfully';
                         csvStatus.className = 'text-sm text-green-600';
                         showDataSection();
                     })
                     .catch(error => {
-                        csvStatus.textContent = `❌ Errore nel caricamento automatico: ${error.message}`;
+                        csvStatus.textContent = `❌ Auto-loading error: ${error.message}`;
                         csvStatus.className = 'text-sm text-red-600';
-                        console.error('Errore caricamento CSV:', error);
+                        console.error('CSV loading error:', error);
                         
                         // Show manual upload fallback
                         manualUploadSection.classList.remove('hidden');
@@ -245,7 +322,7 @@
                 const lines = content.split('\n').filter(line => line.trim() !== '');
                 
                 if (lines.length === 0) {
-                    alert('Il file CSV è vuoto.');
+                    alert('The CSV file is empty.');
                     return;
                 }
 
@@ -266,10 +343,11 @@
                 }
 
                 filteredData = [...csvData];
-                addDebugMessage(`CSV caricato: ${csvData.length} righe, ${headers.length} colonne`);
+                addDebugMessage(`CSV loaded: ${csvData.length} rows, ${headers.length} columns`);
             }
 
             function showDataSection() {
+                updateDebugStatus("Showing data section...");
                 loadingElement.classList.add('hidden');
                 uploadSection.classList.add('hidden'); // Hide upload section completely
                 dataSection.classList.remove('hidden');
@@ -279,16 +357,82 @@
                 updateRowCount();
                 updatePagination();
                 
-                // Auto-analyze rules after loading
-                parseRules();
-                createFilters();
+                updateDebugStatus("Initializing filters...");
+                
+                // Auto-analyze rules after loading and create filters
+                setTimeout(() => {
+                    addDebugMessage("=== FILTER INITIALIZATION START ===");
+                    addDebugMessage(`CSV Data: ${csvData.length} rows loaded`);
+                    addDebugMessage(`Headers: ${headers.join(', ')}`);
+                    
+                    parseRules();
+                    // Removed parseTypeField() - was causing initialization issues
+                    
+                    addDebugMessage(`RuleFields after parsing: ${Object.keys(ruleFields).length} fields`);
+                    Object.keys(ruleFields).forEach(field => {
+                        addDebugMessage(`  ${field}: [${ruleFields[field].join(', ')}]`);
+                    });
+                    
+                    // Initialize filters with all data available
+                    activeFilters = {};
+                    filteredData = [...csvData];
+                    
+                    addDebugMessage("Updating available filters...");
+                    updateAvailableFilters();
+                    
+                    addDebugMessage("Creating filter interface...");
+                    createFilters();
+                    
+                    updateDebugStatus("Filters loaded!");
+                    addDebugMessage("=== FILTER INITIALIZATION END ===");
+                    
+                    updateActiveFiltersDisplay();
+                    updateAvailableFiltersDisplay();
+                }, 500);
             }
             
+            function setupDebugPanel() {
+                clearDebugBtn.addEventListener('click', () => {
+                    debugLog = [];
+                    updateDebugPanel();
+                });
+                
+                updateDebugStatus("Initializing...");
+                updateActiveFiltersDisplay();
+                updateAvailableFiltersDisplay();
+            }
+
             function addDebugMessage(message, type = "info") {
                 const timestamp = new Date().toLocaleTimeString();
                 debugLog.push({ message, type, timestamp });
                 console.log(`[${type.toUpperCase()}] ${message}`);
                 updateDebugPanel();
+            }
+            
+            function updateDebugStatus(status) {
+                if (debugStatus) {
+                    debugStatus.textContent = status;
+                }
+            }
+            
+            function updateActiveFiltersDisplay() {
+                if (activeFiltersDebug) {
+                    if (Object.keys(activeFilters).length === 0) {
+                        activeFiltersDebug.textContent = "No active filters";
+                    } else {
+                        activeFiltersDebug.textContent = JSON.stringify(activeFilters, null, 2);
+                    }
+                }
+            }
+            
+            function updateAvailableFiltersDisplay() {
+                if (availableFiltersDebug) {
+                    const summary = {};
+                    Object.keys(availableFilters).forEach(field => {
+                        summary[field] = `${availableFilters[field].length} values`;
+                    });
+                    availableFiltersDebug.textContent = JSON.stringify(summary, null, 2);
+                }
             }
 
             function updateDebugPanel() {
@@ -305,10 +449,24 @@
                 tableHeader.innerHTML = '';
                 const headerRow = document.createElement('tr');
                 
+                // No selection checkbox needed
+                
                 headers.forEach(header => {
+                    // Skip TYPE column and conditionally show REGOLA
+                    if (header.toLowerCase() === 'type') return;
+                    if (header.toLowerCase() === 'regola' && !showRegolaColumn) return;
+                    
                     const th = document.createElement('th');
                     th.className = 'py-3 px-4 text-left font-semibold';
-                    th.textContent = header;
+                    
+                    // Special formatting for price column
+                    if (header.toLowerCase().includes('prezzo') || header.toLowerCase().includes('price')) {
+                        th.textContent = header + ' (€)';
+                        th.className += ' text-right';
+                    } else {
+                        th.textContent = header;
+                    }
+                    
                     headerRow.appendChild(th);
                 });
                 
@@ -326,18 +484,51 @@
                 
                 for (let i = startIndex; i < endIndex; i++) {
                     const row = filteredData[i];
+                    const rowId = `row_${startIndex + i}`;
                     const tr = document.createElement('tr');
                     tr.className = i % 2 === 0 ? 'bg-gray-50' : 'bg-white';
+                    tr.setAttribute('data-row-id', rowId);
+                    
+                    // No selection checkbox needed
                     
                     headers.forEach(header => {
+                        // Skip TYPE column and conditionally show REGOLA
+                        if (header.toLowerCase() === 'type') return;
+                        if (header.toLowerCase() === 'regola' && !showRegolaColumn) return;
+                        
                         const td = document.createElement('td');
                         td.className = 'py-2 px-4 text-sm';
-                        td.textContent = row[header] || '';
+                        
+                        // Special formatting for price column
+                        if (header.toLowerCase().includes('prezzo') || header.toLowerCase().includes('price')) {
+                            const priceValue = row[header] || '';
+                            if (priceValue && !isNaN(parseFloat(priceValue.replace(',', '.')))) {
+                                // Format as currency
+                                const numericPrice = parseFloat(priceValue.replace(',', '.'));
+                                td.textContent = numericPrice.toLocaleString('it-IT', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                });
+                                td.className += ' text-right font-medium text-green-700';
+                            } else {
+                                td.textContent = priceValue;
+                                td.className += ' text-right';
+                            }
+                        } else if (header.toLowerCase() === 'regola') {
+                            // Special formatting for REGOLA column - make it smaller and wrap
+                            td.className += ' text-xs text-gray-600 max-w-xs break-words';
+                            td.textContent = row[header] || '';
+                        } else {
+                            td.textContent = row[header] || '';
+                        }
+                        
                         tr.appendChild(td);
                     });
                     
                     tableBody.appendChild(tr);
                 }
+                
+                updatePriceCalculation();
             }
 
             function setupEventListeners() {
@@ -361,23 +552,38 @@
 
                 // Reset filters button
                 resetFiltersBtn.addEventListener('click', () => {
+                    addDebugMessage("=== RESET FILTRI ===");
                     activeFilters = {};
                     filteredData = [...csvData];
                     currentPage = 1;
+                    
+                    updateActiveFiltersDisplay();
+                    updateAvailableFilters();
+                    updateAvailableFiltersDisplay();
+                    
                     displayTable();
                     updateRowCount();
                     updatePagination();
                     createFilters(); // Recreate filters to reset selections
+                    
+                    addDebugMessage("Reset completato");
+                });
+
+                // Toggle REGOLA column visibility
+                toggleRegolaBtn.addEventListener('click', () => {
+                    showRegolaColumn = !showRegolaColumn;
+                    toggleRegolaBtn.textContent = showRegolaColumn ? '📋 Nascondi Regole' : '📋 Mostra Regole';
+                    createTable(); // Recreate table with/without REGOLA column
                 });
             }
 
             function updateRowCount() {
-                rowCount.textContent = `${filteredData.length} righe`;
+                rowCount.textContent = `${filteredData.length} rows`;
             }
 
             function updatePagination() {
                 const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-                pageInfo.textContent = `Pagina ${currentPage} di ${totalPages}`;
+                pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
                 
                 prevPageBtn.disabled = currentPage === 1;
                 nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
@@ -385,7 +591,7 @@
 
             // Original parseRules function from version 13
             function parseRules(regolaColumn = 'REGOLA') {
-                addDebugMessage("Inizio analisi delle regole...");
+                addDebugMessage("Starting rule analysis...");
                 ruleFields = {};
                 
                 // Find the correct column name (case insensitive)
@@ -402,7 +608,7 @@
                     
                     ruleCount++;
                     if (ruleCount <= 5) {
-                        addDebugMessage(`Analisi regola #${index+1}: "${ruleText}"`);
+                        addDebugMessage(`Analyzing rule #${index+1}: "${ruleText}"`);
                     }
                     
                     // First, handle square brackets by removing them for parsing
@@ -412,7 +618,7 @@
                     if (hasBrackets) {
                         cleanRuleText = ruleText.replace(/[\[\]]/g, '');
                         if (ruleCount <= 5) {
-                            addDebugMessage(`  Rimosse parentesi quadre per l'analisi: "${cleanRuleText}"`);
+                            addDebugMessage(`  Removed square brackets for analysis: "${cleanRuleText}"`);
                         }
                     }
                     
@@ -429,7 +635,7 @@
                         const valuesPart = match[2].trim();
                         
                         if (ruleCount <= 5) {
-                            addDebugMessage(`  Campo trovato: "${field}" con espressione: "${valuesPart}"`);
+                            addDebugMessage(`  Field found: "${field}" with expression: "${valuesPart}"`);
                         }
                         
                         // Initialize field if not exists
@@ -443,7 +649,7 @@
                     }
                     
                     if (!foundInThisRule && ruleCount <= 10) {
-                        addDebugMessage(`  Nessun pattern campo=valore trovato nella regola #${index+1}`, "warning");
+                        addDebugMessage(`  No field=value pattern found in rule #${index+1}`, "warning");
                     }
                 });
                 
@@ -452,14 +658,16 @@
                     ruleFields[field] = Array.from(ruleFields[field]).sort();
                 });
                 
-                addDebugMessage(`Analisi completata. Trovati ${fieldCount} campi in ${ruleCount} regole. Pattern riconosciuti: ${patternFound}`);
-                addDebugMessage("Campi e valori estratti:");
+                addDebugMessage(`Analysis completed. Found ${fieldCount} fields in ${ruleCount} rules. Patterns recognized: ${patternFound}`);
+                addDebugMessage("Extracted fields and values:");
                 Object.keys(ruleFields).forEach(field => {
                     addDebugMessage(`  ${field}: ${ruleFields[field].join(', ')}`);
                 });
                 
                 updateDebugPanel();
             }
+
+            // parseTypeField function removed - was causing initialization issues
 
             function extractValues(field, valuesPart, ruleCount) {
                 // Remove logical operators (AND, OR) only at the end - they separate different field=value pairs
@@ -531,18 +739,21 @@
             }
 
             function createFilters() {
+                addDebugMessage("=== CREAZIONE FILTRI ===");
+                
                 if (Object.keys(ruleFields).length === 0) {
-                    addDebugMessage("Nessun campo trovato. Esegui prima l'analisi delle regole.", "warning");
+                    addDebugMessage("ERRORE: Nessun campo trovato in ruleFields!", "error");
                     return;
                 }
 
                 const container = document.getElementById('filter-container');
                 container.innerHTML = '';
-
-                // Calculate available values based on current filters
-                updateAvailableFilters();
+                
+                addDebugMessage(`Creando filtri per ${Object.keys(ruleFields).length} campi`);
 
                 Object.keys(ruleFields).forEach(field => {
+                    addDebugMessage(`Creando filtro per campo: ${field}`);
+                    
                     const fieldDiv = document.createElement('div');
                     fieldDiv.className = 'bg-gray-50 p-4 rounded-lg border';
                     
@@ -554,13 +765,19 @@
                     const valuesDiv = document.createElement('div');
                     valuesDiv.className = 'flex flex-wrap gap-2';
                     
-                    const availableValues = availableFilters[field] || ruleFields[field];
-                    const allValues = ruleFields[field];
+                    const availableValues = availableFilters[field] || [];
+                    const allValues = ruleFields[field] || [];
+                    
+                    addDebugMessage(`  Campo ${field}: ${allValues.length} valori totali, ${availableValues.length} disponibili`);
+                    addDebugMessage(`  Valori totali: [${allValues.join(', ')}]`);
+                    addDebugMessage(`  Valori disponibili: [${availableValues.join(', ')}]`);
                     
                     allValues.forEach(value => {
                         const button = document.createElement('button');
                         const isSelected = activeFilters[field] === value;
                         const isAvailable = availableValues.includes(value);
+                        
+                        addDebugMessage(`    Valore "${value}": selected=${isSelected}, available=${isAvailable}`);
                         
                         if (isSelected) {
                             button.className = 'px-3 py-1 bg-indigo-600 text-white rounded-full text-sm font-medium';
@@ -575,15 +792,22 @@
                         
                         if (!button.disabled) {
                             button.addEventListener('click', () => {
+                                addDebugMessage(`Click su ${field}=${value}`);
+                                
                                 if (activeFilters[field] === value) {
                                     // Deselect
+                                    addDebugMessage(`Deselezionando ${field}=${value}`);
                                     delete activeFilters[field];
                                 } else {
                                     // Select
+                                    addDebugMessage(`Selezionando ${field}=${value}`);
                                     activeFilters[field] = value;
                                 }
                                 
+                                updateActiveFiltersDisplay();
                                 applyFilters();
+                                updateAvailableFilters();
+                                updateAvailableFiltersDisplay();
                                 createFilters(); // Recreate to update available options
                             });
                         }
@@ -594,31 +818,77 @@
                     fieldDiv.appendChild(valuesDiv);
                     container.appendChild(fieldDiv);
                 });
+                
+                addDebugMessage("=== FINE CREAZIONE FILTRI ===");
             }
 
             function updateAvailableFilters() {
+                addDebugMessage("=== AGGIORNAMENTO FILTRI DISPONIBILI ===");
                 availableFilters = {};
                 
-                // Get all rows that match current filters (excluding the field we're calculating for)
+                addDebugMessage(`Filtri attivi correnti: ${JSON.stringify(activeFilters)}`);
+                
+                // For each field, calculate which values are available based on current filter selection
                 Object.keys(ruleFields).forEach(field => {
+                    addDebugMessage(`Calcolando valori disponibili per campo: ${field}`);
                     availableFilters[field] = new Set();
                     
-                    csvData.forEach(row => {
-                        const ruleText = row[headers.find(h => h.toLowerCase() === 'regola')] || '';
+                    let matchingRows = 0;
+                    let totalRowsChecked = 0;
+                    
+                    // Check each row to see what values are available for this field
+                    csvData.forEach((row, index) => {
+                        totalRowsChecked++;
                         
-                        // Check if this row matches all other active filters
-                        const otherFilters = { ...activeFilters };
-                        delete otherFilters[field];
+                        // Create a filter set excluding the current field we're calculating
+                        const otherActiveFilters = { ...activeFilters };
+                        delete otherActiveFilters[field];
                         
-                        if (matchesFilters(ruleText, otherFilters)) {
-                            // Extract values for this field from this rule
-                            const fieldValues = extractFieldValuesFromRule(ruleText, field);
-                            fieldValues.forEach(value => availableFilters[field].add(value));
+                        // Only log first few rows to avoid spam
+                        if (index < 3) {
+                            addDebugMessage(`  Riga ${index+1}: Controllo compatibilità con filtri: ${JSON.stringify(otherActiveFilters)}`);
+                        }
+                        
+                        // Check if this row matches all OTHER active filters
+                        if (matchesAllFilters(row, otherActiveFilters)) {
+                            matchingRows++;
+                            
+                            // Extract values for this field from the REGOLA column
+                            const ruleText = row[headers.find(h => h.toLowerCase() === 'regola')] || '';
+                            if (ruleText && ruleText.trim() !== '') {
+                                const fieldValues = extractFieldValuesFromRule(ruleText, field);
+                                if (index < 3) {
+                                    addDebugMessage(`    Riga ${index+1} compatibile. Valori estratti per ${field}: [${fieldValues.join(', ')}]`);
+                                }
+                                
+                                fieldValues.forEach(value => {
+                                    if (value && value.trim()) {
+                                        availableFilters[field].add(value.trim());
+                                        if (index < 3) {
+                                            addDebugMessage(`      Aggiunto valore disponibile: "${value.trim()}"`);
+                                        }
+                                    }
+                                });
+                            } else if (index < 3) {
+                                addDebugMessage(`    Riga ${index+1} compatibile ma senza regola valida`);
+                            }
+                        } else if (index < 3) {
+                            addDebugMessage(`    Riga ${index+1} NON compatibile con filtri attivi`);
                         }
                     });
                     
                     availableFilters[field] = Array.from(availableFilters[field]).sort();
+                    addDebugMessage(`  Campo ${field}: ${totalRowsChecked} righe controllate, ${matchingRows} righe compatibili, ${availableFilters[field].length} valori disponibili`);
+                    addDebugMessage(`  Valori disponibili: [${availableFilters[field].join(', ')}]`);
+                    
+                    // If no filters are active, all values should be available
+                    if (Object.keys(activeFilters).length === 0) {
+                        availableFilters[field] = [...ruleFields[field]];
+                        addDebugMessage(`  Nessun filtro attivo - tutti i valori disponibili per ${field}`);
+                    }
                 });
+                
+                addDebugMessage("=== FINE AGGIORNAMENTO FILTRI DISPONIBILI ===");
             }
 
             function extractFieldValuesFromRule(ruleText, targetField) {
@@ -679,74 +949,79 @@
                 return values;
             }
 
-            function matchesFilters(ruleText, filters) {
-                if (Object.keys(filters).length === 0) return true;
+            function matchesAllFilters(row, filters) {
+                if (Object.keys(filters).length === 0) {
+                    return true;
+                }
                 
-                let cleanRule = ruleText.replace(/[\[\]]/g, '').trim();
-                
-                // For each active filter, check if the rule contains a matching condition
                 for (const [field, value] of Object.entries(filters)) {
-                    let hasMatch = false;
+                    // For ALL fields, check ONLY in REGOLA column
+                    const ruleText = row[headers.find(h => h.toLowerCase() === 'regola')] || '';
+                    const matches = matchesRuleFilter(ruleText, field, value);
                     
-                    // First check normal field=value patterns
-                    const fieldRegex = new RegExp(`${field}\\s*=\\s*([^=]+?)(?=\\s+\\w+\\s*=|$)`, 'g');
-                    let match = fieldRegex.exec(cleanRule);
-                    
-                    if (match) {
-                        // Remove logical operators (AND, OR) only at the end
-                        const valuesPart = match[1].trim().replace(/\s+(AND|OR)\s*$/i, '').trim();
-                        
-                        if (valuesPart.startsWith('(')) {
-                            // Find the matching closing parenthesis
-                            let parenCount = 0;
-                            let endIndex = -1;
-                            
-                            for (let i = 0; i < valuesPart.length; i++) {
-                                if (valuesPart[i] === '(') parenCount++;
-                                if (valuesPart[i] === ')') {
-                                    parenCount--;
-                                    if (parenCount === 0) {
-                                        endIndex = i;
-                                        break;
-                                    }
-                                }
-                            }
-                            
-                            if (endIndex !== -1) {
-                                // Extract only the content within the first set of parentheses
-                                const innerValues = valuesPart.slice(1, endIndex);
-                                const multiValues = innerValues.split(',').map(v => v.trim()).filter(v => v);
-                                hasMatch = multiValues.includes(value);
-                            }
-                        } else {
-                            hasMatch = valuesPart === value;
-                        }
+                    if (!matches) {
+                        return false;
                     }
-                    
-                    // Also check for fields that appear after "and" in truncated patterns
-                    if (!hasMatch) {
-                        const truncatedFieldRegex = new RegExp(`\\)\\s+and\\s+${field}\\s*\\(([^)]+)\\)`, 'gi');
-                        let truncatedMatch = truncatedFieldRegex.exec(cleanRule);
-                        if (truncatedMatch) {
-                            const truncatedValue = truncatedMatch[1].trim();
-                            hasMatch = truncatedValue === value;
-                        }
-                    }
-                    
-                    if (!hasMatch) return false;
                 }
                 
                 return true;
+            }
+
+            function matchesRuleFilter(ruleText, field, value) {
+                let cleanRule = ruleText.replace(/[\[\]]/g, '').trim();
+                
+                // First check normal field=value patterns
+                const fieldRegex = new RegExp(`${field}\\s*=\\s*([^=]+?)(?=\\s+\\w+\\s*=|$)`, 'g');
+                let match = fieldRegex.exec(cleanRule);
+                
+                if (match) {
+                    // Remove logical operators (AND, OR) only at the end
+                    const valuesPart = match[1].trim().replace(/\s+(AND|OR)\s*$/i, '').trim();
+                    
+                    if (valuesPart.startsWith('(')) {
+                        // Find the matching closing parenthesis
+                        let parenCount = 0;
+                        let endIndex = -1;
+                        
+                        for (let i = 0; i < valuesPart.length; i++) {
+                            if (valuesPart[i] === '(') parenCount++;
+                            if (valuesPart[i] === ')') {
+                                parenCount--;
+                                if (parenCount === 0) {
+                                    endIndex = i;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (endIndex !== -1) {
+                            // Extract only the content within the first set of parentheses
+                            const innerValues = valuesPart.slice(1, endIndex);
+                            const multiValues = innerValues.split(',').map(v => v.trim()).filter(v => v);
+                            return multiValues.includes(value);
+                        }
+                    } else {
+                        return valuesPart === value;
+                    }
+                }
+                
+                // Also check for fields that appear after "and" in truncated patterns
+                const truncatedFieldRegex = new RegExp(`\\)\\s+and\\s+${field}\\s*\\(([^)]+)\\)`, 'gi');
+                let truncatedMatch = truncatedFieldRegex.exec(cleanRule);
+                if (truncatedMatch) {
+                    const truncatedValue = truncatedMatch[1].trim();
+                    return truncatedValue === value;
+                }
+                
+                return false;
             }
 
             function applyFilters() {
                 if (Object.keys(activeFilters).length === 0) {
                     filteredData = [...csvData];
                 } else {
-                    const regolaColumn = headers.find(h => h.toLowerCase() === 'regola');
                     filteredData = csvData.filter(row => {
-                        const ruleText = row[regolaColumn] || '';
-                        return matchesFilters(ruleText, activeFilters);
+                        return matchesAllFilters(row, activeFilters);
                     });
                 }
                 
@@ -757,7 +1032,42 @@
                 
                 addDebugMessage(`Filtri applicati. ${filteredData.length} righe corrispondenti.`);
             }
+
+            // Price calculation functions removed - now calculated automatically on visible rows
+
+            function updatePriceCalculation() {
+                let totalAmount = 0;
+                let visibleRowCount = 0;
+                
+                // Find price column
+                const priceColumn = headers.find(h => 
+                    h.toLowerCase().includes('prezzo') || h.toLowerCase().includes('price')
+                );
+                
+                if (priceColumn) {
+                    const startIndex = (currentPage - 1) * rowsPerPage;
+                    const endIndex = Math.min(startIndex + rowsPerPage, filteredData.length);
+                    
+                    for (let i = startIndex; i < endIndex; i++) {
+                        const rowData = filteredData[i];
+                        const priceValue = rowData[priceColumn] || '';
+                        
+                        if (priceValue && !isNaN(parseFloat(priceValue.replace(',', '.')))) {
+                            const numericPrice = parseFloat(priceValue.replace(',', '.'));
+                            totalAmount += numericPrice;
+                        }
+                        visibleRowCount++;
+                    }
+                }
+                
+                // Update display
+                visibleCount.textContent = visibleRowCount;
+                totalPrice.textContent = totalAmount.toLocaleString('it-IT', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'979e861284cced1c',t:'MTc1Njk5OTc4MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'979f759dc1deee78',t:'MTc1NzAwOTU5Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
