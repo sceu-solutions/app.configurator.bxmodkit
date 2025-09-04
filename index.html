@@ -45,58 +45,66 @@
 
         <!-- Data Section -->
         <div id="data-section" class="hidden">
-            <!-- Controls -->
-            <div class="bg-white rounded-2xl shadow-xl p-6 mb-8">
-                <div class="flex flex-wrap items-center justify-between gap-4">
-                    <div class="flex items-center gap-4">
-                        <button id="reset-filters" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium">
-                            🔄 Reset Filtri
-                        </button>
+            <!-- Two Column Layout -->
+            <div class="flex gap-6 min-h-screen">
+                <!-- Left Column - Filters (40%) -->
+                <div class="w-[40%] flex flex-col">
+                    <!-- Filter Controls -->
+                    <div class="bg-white rounded-2xl shadow-xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-bold text-gray-800">🎛️ Filtri Regole</h3>
+                            <button id="reset-filters" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium text-sm">
+                                🔄 Reset
+                            </button>
+                        </div>
+                        <div id="filter-container" class="space-y-4 pb-4">
+                            <div class="text-gray-500 text-center py-8">
+                                Caricamento filtri in corso...
+                            </div>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-4">
-                        <span id="row-count" class="text-gray-600 font-medium"></span>
+
+                    <!-- Debug Panel -->
+                    <div id="debug-panel" class="bg-gray-900 text-green-400 rounded-2xl shadow-xl p-4 mt-4 hidden font-mono text-xs" style="display: none;">
+                        <h3 class="text-sm font-bold mb-2 text-white">🐛 Debug</h3>
+                        <div id="debug-info" class="max-h-32 overflow-y-auto whitespace-pre-wrap"></div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Filter Controls -->
-            <div id="filter-controls" class="bg-white rounded-2xl shadow-xl p-6 mb-8">
-                <h3 class="text-xl font-bold text-gray-800 mb-4">🎛️ Filtri Regole</h3>
-                <div id="filter-container" class="space-y-4">
-                    <div class="text-gray-500 text-center py-8">
-                        Caricamento filtri in corso...
+                <!-- Right Column - Results Table (60%) -->
+                <div class="w-[60%] flex flex-col">
+                    <!-- Controls -->
+                    <div class="bg-white rounded-2xl shadow-xl p-4 mb-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-gray-800">📋 Elenco Materiali</h3>
+                            <span id="row-count" class="text-gray-600 font-medium"></span>
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Debug Panel -->
-            <div id="debug-panel" class="bg-gray-900 text-green-400 rounded-2xl shadow-xl p-6 mb-8 hidden font-mono text-sm" style="display: none;">
-                <h3 class="text-lg font-bold mb-4 text-white">🐛 Debug Information</h3>
-                <div id="debug-info" class="max-h-64 overflow-y-auto whitespace-pre-wrap"></div>
-            </div>
-
-            <!-- Data Table -->
-            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full">
-                        <thead id="table-header" class="bg-indigo-600 text-white">
-                            <!-- Dynamic headers will be added here -->
-                        </thead>
-                        <tbody id="table-body" class="divide-y divide-gray-200">
-                            <!-- Dynamic rows will be added here -->
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- Pagination -->
-                <div class="bg-gray-50 px-6 py-4 flex items-center justify-between border-t">
-                    <button id="prev-page" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-gray-400" disabled>
-                        ← Precedente
-                    </button>
-                    <span id="page-info" class="text-gray-600 font-medium"></span>
-                    <button id="next-page" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-gray-400" disabled>
-                        Successiva →
-                    </button>
+                    <!-- Data Table -->
+                    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full">
+                                <thead id="table-header" class="bg-indigo-600 text-white sticky top-0">
+                                    <!-- Dynamic headers will be added here -->
+                                </thead>
+                                <tbody id="table-body" class="divide-y divide-gray-200">
+                                    <!-- Dynamic rows will be added here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div class="bg-gray-50 px-6 py-4 flex items-center justify-between border-t">
+                            <button id="prev-page" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-gray-400" disabled>
+                                ← Precedente
+                            </button>
+                            <span id="page-info" class="text-gray-600 font-medium"></span>
+                            <button id="next-page" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-gray-400" disabled>
+                                Successiva →
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -751,5 +759,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'979dafbee0bc5278',t:'MTc1Njk5MTAwMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'979e861284cced1c',t:'MTc1Njk5OTc4MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
