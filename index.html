@@ -1,152 +1,95 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Selezionatore di Regole</title>
+    <title>Variant Configurator</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
-    <style>
-        .drop-zone {
-            border: 2px dashed #3b82f6;
-            transition: all 0.3s ease;
-        }
-        .drop-zone:hover, .drop-zone.active {
-            border-color: #1d4ed8;
-            background-color: rgba(59, 130, 246, 0.1);
-        }
-        .table-container {
-            max-height: 600px;
-            overflow-y: auto;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        .animate-pulse {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        .filter-badge {
-            transition: all 0.2s ease;
-        }
-        .filter-badge:hover {
-            transform: scale(1.05);
-        }
-        .filter-badge.selected {
-            background-color: #4f46e5;
-            color: white;
-        }
-        .filter-badge.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            background-color: #e5e7eb;
-            color: #9ca3af;
-        }
-        .debug-info {
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 12px;
-        }
-        .slide-up {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.5s ease-out;
-        }
-        .slide-down {
-            max-height: 500px;
-            transition: max-height 0.5s ease-in;
-        }
-    </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
-    <div class="container mx-auto px-4 py-8">
-        <header class="text-center mb-6">
-            <h1 class="text-3xl font-bold text-indigo-800 mb-2">Selezionatore di Regole</h1>
-            <p class="text-gray-600">Carica un file CSV con separatore ";" e colonna REGOLA per filtrare in base ai parametri</p>
-        </header>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Upload Section -->
+        <div id="upload-section" class="bg-white rounded-2xl shadow-xl p-8 mb-8 transition-all duration-500">
+            <h1 class="text-4xl font-bold text-center text-indigo-700 mb-8">CSV Rule Analyzer</h1>
+            
+            <!-- Auto-loading status -->
+            <div class="mb-6 p-4 bg-blue-50 rounded-lg">
+                <div id="csv-status" class="text-sm text-gray-600">Caricamento automatico regole in corso...</div>
+            </div>
+            
+            <!-- Manual upload fallback -->
+            <div id="manual-upload-section" class="hidden">
+                <div id="drop-zone" class="border-2 border-dashed border-indigo-300 rounded-lg p-12 text-center cursor-pointer bg-indigo-50 hover:bg-indigo-100 transition-colors">
+                    <div class="text-indigo-600 text-6xl mb-4">📁</div>
+                    <p class="text-xl text-indigo-700 font-medium mb-2">Trascina il file CSV qui</p>
+                    <p class="text-indigo-600 mb-4">oppure clicca per selezionare</p>
+                    <input type="file" id="file-input" class="hidden" accept=".csv">
+                    <button class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                        Seleziona File
+                    </button>
+                </div>
+            </div>
+            
+            <div id="loading" class="hidden text-center py-8">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                <p class="mt-2 text-gray-600">Caricamento in corso...</p>
+            </div>
+        </div>
 
-        <div class="max-w-6xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
-            <div class="p-6">
-                <div id="upload-section" class="mb-6 slide-down">
-                    <div id="drop-zone" class="drop-zone rounded-lg p-8 text-center cursor-pointer">
-                        <div class="flex flex-col items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                            </svg>
-                            <p class="text-lg font-medium text-gray-700">Trascina qui il tuo file CSV</p>
-                            <p class="text-sm text-gray-500 mt-1">con separatore ";" e colonna REGOLA</p>
-                            <label class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition cursor-pointer">
-                                Seleziona file
-                                <input type="file" id="file-input" accept=".csv" class="hidden">
-                            </label>
-                        </div>
+        <!-- Data Section -->
+        <div id="data-section" class="hidden">
+            <!-- Controls -->
+            <div class="bg-white rounded-2xl shadow-xl p-6 mb-8">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <button id="reset-filters" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium">
+                            🔄 Reset Filtri
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span id="row-count" class="text-gray-600 font-medium"></span>
                     </div>
                 </div>
+            </div>
 
-                <div id="loading" class="hidden">
-                    <div class="flex justify-center items-center space-x-2">
-                        <div class="w-4 h-4 rounded-full bg-blue-600 animate-pulse"></div>
-                        <div class="w-4 h-4 rounded-full bg-blue-600 animate-pulse" style="animation-delay: 0.2s"></div>
-                        <div class="w-4 h-4 rounded-full bg-blue-600 animate-pulse" style="animation-delay: 0.4s"></div>
+            <!-- Filter Controls -->
+            <div id="filter-controls" class="bg-white rounded-2xl shadow-xl p-6 mb-8">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">🎛️ Filtri Regole</h3>
+                <div id="filter-container" class="space-y-4">
+                    <div class="text-gray-500 text-center py-8">
+                        Caricamento filtri in corso...
                     </div>
                 </div>
+            </div>
 
-                <div id="data-section" class="hidden">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-gray-800">Filtri Regole</h2>
-                        <div class="space-x-2">
-                            <button id="show-upload" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                                Carica nuovo file
-                            </button>
-                            <button id="analyze-rules" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                                Analizza regole
-                            </button>
-                            <button id="reset-filters" class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
-                                Reimposta filtri
-                            </button>
-                            <button id="toggle-debug" class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
-                                Debug
-                            </button>
-                        </div>
-                    </div>
+            <!-- Debug Panel -->
+            <div id="debug-panel" class="bg-gray-900 text-green-400 rounded-2xl shadow-xl p-6 mb-8 hidden font-mono text-sm" style="display: none;">
+                <h3 class="text-lg font-bold mb-4 text-white">🐛 Debug Information</h3>
+                <div id="debug-info" class="max-h-64 overflow-y-auto whitespace-pre-wrap"></div>
+            </div>
 
-                    <div id="debug-panel" class="mb-4 p-4 bg-gray-100 rounded-lg hidden">
-                        <h3 class="text-sm font-medium text-gray-700 mb-2">Informazioni di debug</h3>
-                        <div id="debug-info" class="debug-info p-2 bg-gray-800 text-green-400 rounded"></div>
-                    </div>
-
-                    <div id="rule-filters" class="mb-6 p-4 bg-gray-50 rounded-lg">
-                        <p class="text-sm text-gray-500 mb-4">Seleziona i valori per filtrare le regole:</p>
-                        <div id="filter-controls" class="space-y-4">
-                            <!-- Dynamic filter controls will be inserted here -->
-                            <div class="text-center text-gray-400 py-4">Caricamento dei filtri in corso...</div>
-                        </div>
-                    </div>
-
-                    <div class="table-container border rounded-lg">
-                        <table id="data-table" class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50 sticky top-0">
-                                <tr id="table-header"></tr>
-                            </thead>
-                            <tbody id="table-body" class="bg-white divide-y divide-gray-200"></tbody>
-                        </table>
-                    </div>
-
-                    <div class="mt-4 flex justify-between items-center">
-                        <div class="text-sm text-gray-600">
-                            <span id="row-count">0</span> righe visualizzate
-                        </div>
-                        <div class="flex space-x-2">
-                            <button id="prev-page" class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition disabled:opacity-50" disabled>
-                                Precedente
-                            </button>
-                            <span id="page-info" class="px-3 py-1">Pagina 1</span>
-                            <button id="next-page" class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition disabled:opacity-50" disabled>
-                                Successiva
-                            </button>
-                        </div>
-                    </div>
+            <!-- Data Table -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead id="table-header" class="bg-indigo-600 text-white">
+                            <!-- Dynamic headers will be added here -->
+                        </thead>
+                        <tbody id="table-body" class="divide-y divide-gray-200">
+                            <!-- Dynamic rows will be added here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="bg-gray-50 px-6 py-4 flex items-center justify-between border-t">
+                    <button id="prev-page" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-gray-400" disabled>
+                        ← Precedente
+                    </button>
+                    <span id="page-info" class="text-gray-600 font-medium"></span>
+                    <button id="next-page" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-gray-400" disabled>
+                        Successiva →
+                    </button>
                 </div>
             </div>
         </div>
@@ -167,11 +110,10 @@
             const pageInfo = document.getElementById('page-info');
             const filterControls = document.getElementById('filter-controls');
             const resetFiltersBtn = document.getElementById('reset-filters');
-            const analyzeRulesBtn = document.getElementById('analyze-rules');
-            const toggleDebugBtn = document.getElementById('toggle-debug');
-            const showUploadBtn = document.getElementById('show-upload');
             const debugPanel = document.getElementById('debug-panel');
             const debugInfo = document.getElementById('debug-info');
+            const csvStatus = document.getElementById('csv-status');
+            const manualUploadSection = document.getElementById('manual-upload-section');
 
             let csvData = [];
             let headers = [];
@@ -182,6 +124,9 @@
             let activeFilters = {}; // Will store currently selected filter values
             let availableFilters = {}; // Will store available filter values based on current selection
             let debugLog = [];
+
+            // Auto-load CSV on startup
+            loadRulesAutomatically();
 
             // Handle drag and drop events
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -221,10 +166,7 @@
                 handleFiles(this.files);
             });
 
-            showUploadBtn.addEventListener('click', function() {
-                uploadSection.classList.remove('slide-up');
-                uploadSection.classList.add('slide-down');
-            });
+
 
             function handleFiles(files) {
                 if (files.length > 0) {
@@ -237,77 +179,196 @@
                 }
             }
 
-            function parseCSV(file) {
-                loadingElement.classList.remove('hidden');
-                debugLog = [];
-                addDebugMessage("Inizio parsing del file CSV...");
+            // Auto-load function
+            function loadRulesAutomatically() {
+                csvStatus.textContent = 'Caricamento automatico regole in corso...';
+                csvStatus.className = 'text-sm text-blue-600';
                 
-                Papa.parse(file, {
-                    header: true,
-                    dynamicTyping: true,
-                    delimiter: ';', // Set delimiter to semicolon
-                    complete: function(results) {
-                        loadingElement.classList.add('hidden');
-                        dataSection.classList.remove('hidden');
-                        
-                        // Hide upload section
-                        uploadSection.classList.remove('slide-down');
-                        uploadSection.classList.add('slide-up');
-                        
-                        if (results.data && results.data.length > 0) {
-                            csvData = results.data.filter(row => Object.values(row).some(val => val !== null && val !== ''));
-                            headers = results.meta.fields;
-                            filteredData = [...csvData];
-                            
-                            addDebugMessage(`CSV caricato con successo. ${csvData.length} righe trovate.`);
-                            addDebugMessage(`Colonne trovate: ${headers.join(', ')}`);
-                            
-                            // Check if REGOLA column exists
-                            const regolaColumnIndex = headers.findIndex(h => 
-                                h === 'REGOLA' || h === 'regola' || h.toLowerCase() === 'regola'
-                            );
-                            
-                            if (regolaColumnIndex === -1) {
-                                addDebugMessage("ERRORE: Colonna REGOLA non trovata!", "error");
-                                alert('Il file CSV non contiene una colonna chiamata "REGOLA".');
-                                filterControls.innerHTML = '<div class="text-center text-red-500">Colonna REGOLA non trovata nel file CSV</div>';
-                            } else {
-                                const regolaColumn = headers[regolaColumnIndex];
-                                addDebugMessage(`Colonna REGOLA trovata: "${regolaColumn}"`);
-                                
-                                // Show some sample values from REGOLA column
-                                addDebugMessage("Esempi di valori nella colonna REGOLA:");
-                                for (let i = 0; i < Math.min(5, csvData.length); i++) {
-                                    addDebugMessage(`  ${i+1}. ${csvData[i][regolaColumn]}`);
-                                }
-                                
-                                // Parse rules and extract fields and values
-                                parseRules(regolaColumn);
-                                
-                                // Initialize available filters with all possible values
-                                initializeAvailableFilters();
-                                
-                                // Create filter controls
-                                createFilterControls();
-                            }
-                            
-                            displayData();
-                        } else {
-                            addDebugMessage("ERRORE: Il file CSV non contiene dati validi.", "error");
-                            alert('Il file CSV non contiene dati validi.');
+                fetch('regole-prodotto-WebApp-BX MOD KIT.csv')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`File non trovato: ${response.status}`);
                         }
+                        return response.text();
+                    })
+                    .then(content => {
+                        parseCSVContent(content);
+                        csvStatus.textContent = '✅ Regole caricate automaticamente con successo dal server';
+                        csvStatus.className = 'text-sm text-green-600';
+                        showDataSection();
+                    })
+                    .catch(error => {
+                        csvStatus.textContent = `❌ Errore nel caricamento automatico: ${error.message}`;
+                        csvStatus.className = 'text-sm text-red-600';
+                        console.error('Errore caricamento CSV:', error);
                         
-                        updateDebugPanel();
-                    },
-                    error: function(error) {
-                        loadingElement.classList.add('hidden');
-                        addDebugMessage(`ERRORE durante la lettura del file: ${error}`, "error");
-                        updateDebugPanel();
-                        alert('Errore durante la lettura del file: ' + error);
-                    }
+                        // Show manual upload fallback
+                        manualUploadSection.classList.remove('hidden');
+                        setupManualUpload();
+                    });
+            }
+
+            function setupManualUpload() {
+                dropZone.addEventListener('click', () => {
+                    fileInput.click();
                 });
             }
 
+            function parseCSV(file) {
+                loadingElement.classList.remove('hidden');
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    parseCSVContent(content);
+                    showDataSection();
+                };
+                reader.readAsText(file);
+            }
+
+            function parseCSVContent(content) {
+                const lines = content.split('\n').filter(line => line.trim() !== '');
+                
+                if (lines.length === 0) {
+                    alert('Il file CSV è vuoto.');
+                    return;
+                }
+
+                // Parse headers
+                headers = lines[0].split(';').map(header => header.trim());
+                
+                // Parse data
+                csvData = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const values = lines[i].split(';');
+                    const row = {};
+                    
+                    headers.forEach((header, index) => {
+                        row[header] = values[index] ? values[index].trim() : '';
+                    });
+                    
+                    csvData.push(row);
+                }
+
+                filteredData = [...csvData];
+                addDebugMessage(`CSV caricato: ${csvData.length} righe, ${headers.length} colonne`);
+            }
+
+            function showDataSection() {
+                loadingElement.classList.add('hidden');
+                uploadSection.classList.add('hidden'); // Hide upload section completely
+                dataSection.classList.remove('hidden');
+                
+                createTable();
+                setupEventListeners();
+                updateRowCount();
+                updatePagination();
+                
+                // Auto-analyze rules after loading
+                parseRules();
+                createFilters();
+            }
+            
+            function addDebugMessage(message, type = "info") {
+                const timestamp = new Date().toLocaleTimeString();
+                debugLog.push({ message, type, timestamp });
+                console.log(`[${type.toUpperCase()}] ${message}`);
+                updateDebugPanel();
+            }
+
+            function updateDebugPanel() {
+                if (debugInfo) {
+                    debugInfo.textContent = debugLog.slice(-50).map(log => 
+                        `[${log.timestamp}] ${log.message}`
+                    ).join('\n');
+                    debugInfo.scrollTop = debugInfo.scrollHeight;
+                }
+            }
+
+            function createTable() {
+                // Create table headers
+                tableHeader.innerHTML = '';
+                const headerRow = document.createElement('tr');
+                
+                headers.forEach(header => {
+                    const th = document.createElement('th');
+                    th.className = 'py-3 px-4 text-left font-semibold';
+                    th.textContent = header;
+                    headerRow.appendChild(th);
+                });
+                
+                tableHeader.appendChild(headerRow);
+                
+                // Display initial data
+                displayTable();
+            }
+
+            function displayTable() {
+                tableBody.innerHTML = '';
+                
+                const startIndex = (currentPage - 1) * rowsPerPage;
+                const endIndex = Math.min(startIndex + rowsPerPage, filteredData.length);
+                
+                for (let i = startIndex; i < endIndex; i++) {
+                    const row = filteredData[i];
+                    const tr = document.createElement('tr');
+                    tr.className = i % 2 === 0 ? 'bg-gray-50' : 'bg-white';
+                    
+                    headers.forEach(header => {
+                        const td = document.createElement('td');
+                        td.className = 'py-2 px-4 text-sm';
+                        td.textContent = row[header] || '';
+                        tr.appendChild(td);
+                    });
+                    
+                    tableBody.appendChild(tr);
+                }
+            }
+
+            function setupEventListeners() {
+                // Pagination
+                prevPageBtn.addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        displayTable();
+                        updatePagination();
+                    }
+                });
+
+                nextPageBtn.addEventListener('click', () => {
+                    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        displayTable();
+                        updatePagination();
+                    }
+                });
+
+                // Reset filters button
+                resetFiltersBtn.addEventListener('click', () => {
+                    activeFilters = {};
+                    filteredData = [...csvData];
+                    currentPage = 1;
+                    displayTable();
+                    updateRowCount();
+                    updatePagination();
+                    createFilters(); // Recreate filters to reset selections
+                });
+            }
+
+            function updateRowCount() {
+                rowCount.textContent = `${filteredData.length} righe`;
+            }
+
+            function updatePagination() {
+                const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+                pageInfo.textContent = `Pagina ${currentPage} di ${totalPages}`;
+                
+                prevPageBtn.disabled = currentPage === 1;
+                nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+            }
+
+            // Original parseRules function from version 13
             function parseRules(regolaColumn = 'REGOLA') {
                 addDebugMessage("Inizio analisi delle regole...");
                 ruleFields = {};
@@ -341,7 +402,6 @@
                     }
                     
                     // Try to find field=value patterns with flexible spacing around =
-                    // This regex looks for word characters followed by = (with optional spaces) and then captures everything until the next field= or end
                     const fieldRegex = /(\w+)\s*=\s*([^=]+?)(?=\s+\w+\s*=|$)/g;
                     let match;
                     let foundInThisRule = false;
@@ -385,499 +445,304 @@
                 
                 updateDebugPanel();
             }
-            
+
             function extractValues(field, valuesPart, ruleCount) {
-                // Rimuovere completamente gli operatori logici "and", "or" e "<>"
+                // Remove logical operators (AND, OR) only at the end - they separate different field=value pairs
+                let cleanValues = valuesPart.replace(/\s+(AND|OR)\s*$/i, '').trim();
                 
-                // Prima di tutto, rimuoviamo gli operatori logici completi (parole intere)
-                let processedValues = valuesPart
-                    .replace(/\b(and|or)\b/gi, " ")
-                    .replace(/<>/g, " "); // Aggiungiamo il supporto per l'operatore "<>"
-                
-                // Gestire gli operatori logici che potrebbero essere attaccati ai valori
-                // Caso 1: "valore1and" -> "valore1"
-                processedValues = processedValues.replace(/(\w+)(and|or)\b/gi, "$1");
-                
-                // Caso 2: "andvalore1" -> "valore1"
-                processedValues = processedValues.replace(/\b(and|or)(\w+)/gi, "$2");
-                
-                // Gestire parentesi e virgole
-                const parenthesesRegex = /\(([^)]+)\)/g;
-                let parenthesesMatch;
-                
-                while ((parenthesesMatch = parenthesesRegex.exec(processedValues)) !== null) {
-                    const content = parenthesesMatch[1];
-                    // Dividere per virgole e aggiungere ogni valore
-                    const commaValues = content.split(',').map(v => v.trim());
-                    
-                    // Sostituire l'espressione tra parentesi con spazi
-                    processedValues = processedValues.replace(
-                        parenthesesMatch[0], 
-                        commaValues.join(' ')
-                    );
-                    
-                    if (ruleCount <= 5) {
-                        addDebugMessage(`    Parentesi trovate: "${parenthesesMatch[0]}" → valori: ${commaValues.join(', ')}`);
-                    }
+                if (ruleCount <= 5) {
+                    addDebugMessage(`    Elaborazione valori per ${field}: "${cleanValues}"`);
                 }
                 
-                // Rimuovere le parentesi rimanenti
-                processedValues = processedValues.replace(/[()]/g, '');
-                
-                // Dividere per spazi e processare ogni valore
-                const values = processedValues.split(/\s+/);
-                
-                values.forEach(value => {
-                    const trimmedValue = value.trim();
-                    // Saltare valori vuoti, operatori logici e "<>"
-                    if (trimmedValue && 
-                        !/^(and|or)$/i.test(trimmedValue) && 
-                        trimmedValue !== "<>") {
-                        ruleFields[field].add(trimmedValue);
-                        
-                        if (ruleCount <= 5) {
-                            addDebugMessage(`    Valore aggiunto: "${trimmedValue}"`);
-                        }
-                    } else if (trimmedValue && 
-                              ((/^(and|or)$/i.test(trimmedValue)) || 
-                               trimmedValue === "<>")) {
-                        if (ruleCount <= 5) {
-                            addDebugMessage(`    Operatore ignorato: "${trimmedValue}"`);
+                // Handle parentheses for multiple values
+                if (cleanValues.startsWith('(')) {
+                    // Find the matching closing parenthesis
+                    let parenCount = 0;
+                    let endIndex = -1;
+                    
+                    for (let i = 0; i < cleanValues.length; i++) {
+                        if (cleanValues[i] === '(') parenCount++;
+                        if (cleanValues[i] === ')') {
+                            parenCount--;
+                            if (parenCount === 0) {
+                                endIndex = i;
+                                break;
+                            }
                         }
                     }
-                });
+                    
+                    if (endIndex !== -1) {
+                        // Extract only the content within the first set of parentheses
+                        const innerValues = cleanValues.slice(1, endIndex);
+                        const values = innerValues.split(',').map(v => v.trim()).filter(v => v);
+                        
+                        values.forEach(value => {
+                            ruleFields[field].add(value);
+                            if (ruleCount <= 5) {
+                                addDebugMessage(`      Aggiunto valore: "${value}"`);
+                            }
+                        });
+                        
+                        // Check if there's more content after the closing parenthesis (like "and DOOR_VOLTAGE (80VDC")
+                        const remainingText = cleanValues.slice(endIndex + 1).trim();
+                        if (remainingText) {
+                            const nextFieldMatch = remainingText.match(/^\s*and\s+(\w+)\s*\(([^)]+)\)/i);
+                            if (nextFieldMatch) {
+                                const nextField = nextFieldMatch[1].trim();
+                                const nextValue = nextFieldMatch[2].trim();
+                                if (!ruleFields[nextField]) {
+                                    ruleFields[nextField] = new Set();
+                                }
+                                ruleFields[nextField].add(nextValue);
+                                if (ruleCount <= 5) {
+                                    addDebugMessage(`      Trovato campo aggiuntivo: "${nextField}" con valore: "${nextValue}"`);
+                                }
+                            }
+                        }
+                    } else {
+                        // Malformed parentheses, treat as single value
+                        ruleFields[field].add(cleanValues);
+                        if (ruleCount <= 5) {
+                            addDebugMessage(`      Aggiunto valore con parentesi malformate: "${cleanValues}"`);
+                        }
+                    }
+                } else {
+                    // Single value without parentheses
+                    ruleFields[field].add(cleanValues);
+                    if (ruleCount <= 5) {
+                        addDebugMessage(`      Aggiunto valore singolo: "${cleanValues}"`);
+                    }
+                }
             }
 
-            function initializeAvailableFilters() {
-                availableFilters = {};
-                
-                // Initialize with all possible values
-                Object.keys(ruleFields).forEach(field => {
-                    availableFilters[field] = new Set(ruleFields[field]);
-                });
-                
-                addDebugMessage("Filtri disponibili inizializzati con tutti i valori possibili.");
-            }
-
-            function createFilterControls() {
-                filterControls.innerHTML = '';
-                
+            function createFilters() {
                 if (Object.keys(ruleFields).length === 0) {
-                    filterControls.innerHTML = '<div class="text-center text-gray-500">Nessun campo trovato nella colonna REGOLA</div>';
+                    addDebugMessage("Nessun campo trovato. Esegui prima l'analisi delle regole.", "warning");
                     return;
                 }
-                
-                // Create a section for each field
-                Object.keys(ruleFields).sort().forEach(field => {
-                    const fieldValues = ruleFields[field];
+
+                const container = document.getElementById('filter-container');
+                container.innerHTML = '';
+
+                // Calculate available values based on current filters
+                updateAvailableFilters();
+
+                Object.keys(ruleFields).forEach(field => {
+                    const fieldDiv = document.createElement('div');
+                    fieldDiv.className = 'bg-gray-50 p-4 rounded-lg border';
                     
-                    const fieldSection = document.createElement('div');
-                    fieldSection.className = 'field-filter';
-                    fieldSection.dataset.field = field;
+                    const fieldTitle = document.createElement('h4');
+                    fieldTitle.className = 'font-semibold text-gray-800 mb-3';
+                    fieldTitle.textContent = field;
+                    fieldDiv.appendChild(fieldTitle);
                     
-                    const fieldLabel = document.createElement('h3');
-                    fieldLabel.className = 'text-sm font-medium text-gray-700 mb-2';
-                    fieldLabel.textContent = field;
+                    const valuesDiv = document.createElement('div');
+                    valuesDiv.className = 'flex flex-wrap gap-2';
                     
-                    const valuesContainer = document.createElement('div');
-                    valuesContainer.className = 'flex flex-wrap gap-2';
-                    valuesContainer.dataset.field = field;
+                    const availableValues = availableFilters[field] || ruleFields[field];
+                    const allValues = ruleFields[field];
                     
-                    // Create a badge for each possible value
-                    fieldValues.forEach(value => {
-                        // Non creare badge per gli operatori logici o valori vuoti
-                        if (!value || 
-                            value.toLowerCase() === 'and' || 
-                            value.toLowerCase() === 'or' ||
-                            value === "<>") {
-                            return; // Salta questo valore
+                    allValues.forEach(value => {
+                        const button = document.createElement('button');
+                        const isSelected = activeFilters[field] === value;
+                        const isAvailable = availableValues.includes(value);
+                        
+                        if (isSelected) {
+                            button.className = 'px-3 py-1 bg-indigo-600 text-white rounded-full text-sm font-medium';
+                        } else if (isAvailable) {
+                            button.className = 'px-3 py-1 bg-white text-gray-700 border border-gray-300 rounded-full text-sm hover:bg-gray-50 cursor-pointer';
+                        } else {
+                            button.className = 'px-3 py-1 bg-gray-200 text-gray-400 border border-gray-200 rounded-full text-sm cursor-not-allowed opacity-50';
+                            button.disabled = true;
                         }
                         
-                        const badge = document.createElement('span');
-                        badge.className = 'filter-badge px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm cursor-pointer hover:bg-gray-300';
-                        badge.textContent = value;
-                        badge.dataset.field = field;
-                        badge.dataset.value = value;
+                        button.textContent = value;
                         
-                        // Check if this value is available in the current filter state
-                        const isAvailable = availableFilters[field] && availableFilters[field].has(value);
-                        if (!isAvailable) {
-                            badge.classList.add('disabled');
-                        } else {
-                            badge.addEventListener('click', function() {
-                                if (!this.classList.contains('disabled')) {
-                                    toggleFilter(this);
+                        if (!button.disabled) {
+                            button.addEventListener('click', () => {
+                                if (activeFilters[field] === value) {
+                                    // Deselect
+                                    delete activeFilters[field];
+                                } else {
+                                    // Select
+                                    activeFilters[field] = value;
                                 }
+                                
+                                applyFilters();
+                                createFilters(); // Recreate to update available options
                             });
                         }
                         
-                        valuesContainer.appendChild(badge);
+                        valuesDiv.appendChild(button);
                     });
                     
-                    fieldSection.appendChild(fieldLabel);
-                    fieldSection.appendChild(valuesContainer);
-                    filterControls.appendChild(fieldSection);
+                    fieldDiv.appendChild(valuesDiv);
+                    container.appendChild(fieldDiv);
                 });
-            }
-
-            function toggleFilter(badge) {
-                const field = badge.dataset.field;
-                const value = badge.dataset.value;
-                
-                // Initialize field in activeFilters if not exists
-                if (!activeFilters[field]) {
-                    activeFilters[field] = new Set();
-                }
-                
-                // Toggle selection
-                if (badge.classList.contains('selected')) {
-                    badge.classList.remove('selected');
-                    activeFilters[field].delete(value);
-                    
-                    // Remove empty field filters
-                    if (activeFilters[field].size === 0) {
-                        delete activeFilters[field];
-                    }
-                } else {
-                    badge.classList.add('selected');
-                    activeFilters[field].add(value);
-                }
-                
-                // Apply filters
-                applyFilters();
-                
-                // Update available filters based on new filtered data
-                updateAvailableFilters();
-                
-                // Update UI to reflect available filters
-                updateFilterUI();
-            }
-
-            function applyFilters() {
-                addDebugMessage("Applicazione filtri...");
-                
-                // If no active filters, show all data
-                if (Object.keys(activeFilters).length === 0) {
-                    addDebugMessage("Nessun filtro attivo, mostro tutti i dati.");
-                    filteredData = [...csvData];
-                    currentPage = 1;
-                    displayData();
-                    return;
-                }
-                
-                // Find the correct REGOLA column name (case insensitive)
-                const regolaColumn = headers.find(h => h.toLowerCase() === 'regola') || 'REGOLA';
-                
-                addDebugMessage(`Filtri attivi: ${JSON.stringify(Object.fromEntries(
-                    Object.entries(activeFilters).map(([k, v]) => [k, Array.from(v)])
-                ))}`);
-                
-                // Filter data based on active filters
-                filteredData = csvData.filter(row => {
-                    const ruleText = row[regolaColumn];
-                    if (!ruleText) return false;
-                    
-                    // Remove brackets for filtering
-                    const cleanRuleText = ruleText.replace(/[\[\]]/g, '');
-                    
-                    // Check each field filter
-                    return Object.keys(activeFilters).every(field => {
-                        const selectedValues = Array.from(activeFilters[field]);
-                        
-                        // Look for the field in the rule text with flexible spacing
-                        const fieldPattern = new RegExp(`${field}\\s*=\\s*([^=]+?)(?=\\s+\\w+\\s*=|$)`);
-                        const match = cleanRuleText.match(fieldPattern);
-                        
-                        if (!match) return false;
-                        
-                        const ruleValuesPart = match[1];
-                        
-                        // Process the rule values part to extract actual values
-                        const ruleValues = extractRuleValues(ruleValuesPart);
-                        
-                        // Check if any selected value is in the rule values
-                        return selectedValues.some(val => ruleValues.includes(val));
-                    });
-                });
-                
-                addDebugMessage(`Filtro applicato: ${filteredData.length} righe corrispondenti.`);
-                currentPage = 1;
-                displayData();
-                updateDebugPanel();
-            }
-            
-            function extractRuleValues(valuesPart) {
-                // Rimuovere completamente gli operatori logici "and", "or" e "<>"
-                
-                // Prima di tutto, rimuoviamo gli operatori logici completi (parole intere)
-                let processedValues = valuesPart
-                    .replace(/\b(and|or)\b/gi, " ")
-                    .replace(/<>/g, " "); // Aggiungiamo il supporto per l'operatore "<>"
-                
-                // Gestire gli operatori logici che potrebbero essere attaccati ai valori
-                // Caso 1: "valore1and" -> "valore1"
-                processedValues = processedValues.replace(/(\w+)(and|or)\b/gi, "$1");
-                
-                // Caso 2: "andvalore1" -> "valore1"
-                processedValues = processedValues.replace(/\b(and|or)(\w+)/gi, "$2");
-                
-                // Gestire parentesi e virgole
-                const parenthesesRegex = /\(([^)]+)\)/g;
-                let parenthesesMatch;
-                
-                while ((parenthesesMatch = parenthesesRegex.exec(processedValues)) !== null) {
-                    const content = parenthesesMatch[1];
-                    // Dividere per virgole e aggiungere ogni valore
-                    const commaValues = content.split(',').map(v => v.trim());
-                    
-                    // Sostituire l'espressione tra parentesi con spazi
-                    processedValues = processedValues.replace(
-                        parenthesesMatch[0], 
-                        commaValues.join(' ')
-                    );
-                }
-                
-                // Rimuovere le parentesi rimanenti
-                processedValues = processedValues.replace(/[()]/g, '');
-                
-                // Dividere per spazi e processare ogni valore
-                return processedValues.split(/\s+/)
-                    .map(value => value.trim())
-                    .filter(value => value !== '' && 
-                           !/^(and|or)$/i.test(value) && 
-                           value !== "<>");
             }
 
             function updateAvailableFilters() {
-                addDebugMessage("Aggiornamento filtri disponibili...");
+                availableFilters = {};
                 
-                // Reset available filters
-                initializeAvailableFilters();
-                
-                // If no active filters, all filters are available
-                if (Object.keys(activeFilters).length === 0) {
-                    addDebugMessage("Nessun filtro attivo, tutti i filtri sono disponibili.");
-                    return;
-                }
-                
-                // Find the correct REGOLA column name (case insensitive)
-                const regolaColumn = headers.find(h => h.toLowerCase() === 'regola') || 'REGOLA';
-                
-                // For each field, determine which values are available based on current filtered data
+                // Get all rows that match current filters (excluding the field we're calculating for)
                 Object.keys(ruleFields).forEach(field => {
-                    // Skip the field if it's already in active filters
-                    if (activeFilters[field]) {
-                        // For active fields, only the selected values are available
-                        const selectedValues = Array.from(activeFilters[field]);
-                        availableFilters[field] = new Set(selectedValues);
-                        return;
-                    }
+                    availableFilters[field] = new Set();
                     
-                    // For other fields, calculate available values based on filtered data
-                    const availableValues = new Set();
-                    
-                    filteredData.forEach(row => {
-                        const ruleText = row[regolaColumn];
-                        if (!ruleText) return;
+                    csvData.forEach(row => {
+                        const ruleText = row[headers.find(h => h.toLowerCase() === 'regola')] || '';
                         
-                        // Remove brackets for analysis
-                        const cleanRuleText = ruleText.replace(/[\[\]]/g, '');
+                        // Check if this row matches all other active filters
+                        const otherFilters = { ...activeFilters };
+                        delete otherFilters[field];
                         
-                        // Look for the field in the rule text
-                        const fieldPattern = new RegExp(`${field}\\s*=\\s*([^=]+?)(?=\\s+\\w+\\s*=|$)`);
-                        const match = cleanRuleText.match(fieldPattern);
-                        
-                        if (match) {
-                            const ruleValuesPart = match[1];
-                            const ruleValues = extractRuleValues(ruleValuesPart);
-                            
-                            // Add each value to available values
-                            ruleValues.forEach(value => {
-                                if (value && 
-                                    !/^(and|or)$/i.test(value) && 
-                                    value !== "<>") {
-                                    availableValues.add(value);
-                                }
-                            });
+                        if (matchesFilters(ruleText, otherFilters)) {
+                            // Extract values for this field from this rule
+                            const fieldValues = extractFieldValuesFromRule(ruleText, field);
+                            fieldValues.forEach(value => availableFilters[field].add(value));
                         }
                     });
                     
-                    availableFilters[field] = availableValues;
-                });
-                
-                addDebugMessage("Filtri disponibili aggiornati in base ai risultati filtrati.");
-                
-                // Debug output of available filters
-                Object.keys(availableFilters).forEach(field => {
-                    const values = Array.from(availableFilters[field]).join(', ');
-                    addDebugMessage(`  ${field}: ${values || 'nessun valore disponibile'}`);
+                    availableFilters[field] = Array.from(availableFilters[field]).sort();
                 });
             }
 
-            function updateFilterUI() {
-                // Update the UI to reflect available filters
-                document.querySelectorAll('.filter-badge').forEach(badge => {
-                    const field = badge.dataset.field;
-                    const value = badge.dataset.value;
+            function extractFieldValuesFromRule(ruleText, targetField) {
+                const values = [];
+                let cleanRuleText = ruleText.replace(/[\[\]]/g, '');
+                
+                const fieldRegex = /(\w+)\s*=\s*([^=]+?)(?=\s+\w+\s*=|$)/g;
+                let match;
+                
+                while ((match = fieldRegex.exec(cleanRuleText)) !== null) {
+                    const field = match[1].trim();
+                    const valuesPart = match[2].trim();
                     
-                    // Check if this value is selected
-                    const isSelected = activeFilters[field] && activeFilters[field].has(value);
-                    
-                    // Check if this value is available in the current filter state
-                    const isAvailable = availableFilters[field] && availableFilters[field].has(value);
-                    
-                    // Update badge classes
-                    if (isSelected) {
-                        badge.classList.add('selected');
-                        badge.classList.remove('disabled');
-                    } else if (!isAvailable) {
-                        badge.classList.add('disabled');
-                        badge.classList.remove('selected');
-                    } else {
-                        badge.classList.remove('disabled');
-                        badge.classList.remove('selected');
+                    if (field === targetField) {
+                        // Remove logical operators (AND, OR) only at the end
+                        let cleanValues = valuesPart.replace(/\s+(AND|OR)\s*$/i, '').trim();
+                        
+                        if (cleanValues.startsWith('(')) {
+                            // Find the matching closing parenthesis
+                            let parenCount = 0;
+                            let endIndex = -1;
+                            
+                            for (let i = 0; i < cleanValues.length; i++) {
+                                if (cleanValues[i] === '(') parenCount++;
+                                if (cleanValues[i] === ')') {
+                                    parenCount--;
+                                    if (parenCount === 0) {
+                                        endIndex = i;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            if (endIndex !== -1) {
+                                // Extract only the content within the first set of parentheses
+                                const innerValues = cleanValues.slice(1, endIndex);
+                                const multiValues = innerValues.split(',').map(v => v.trim()).filter(v => v);
+                                values.push(...multiValues);
+                            }
+                        } else {
+                            values.push(cleanValues);
+                        }
                     }
-                });
+                }
+                
+                // Also check for fields that appear after "and" in truncated patterns
+                const truncatedFieldRegex = /\)\s+and\s+(\w+)\s*\(([^)]+)\)/gi;
+                let truncatedMatch;
+                while ((truncatedMatch = truncatedFieldRegex.exec(cleanRuleText)) !== null) {
+                    const field = truncatedMatch[1].trim();
+                    const value = truncatedMatch[2].trim();
+                    
+                    if (field === targetField) {
+                        values.push(value);
+                    }
+                }
+                
+                return values;
             }
 
-            resetFiltersBtn.addEventListener('click', function() {
-                // Clear all active filters
-                activeFilters = {};
+            function matchesFilters(ruleText, filters) {
+                if (Object.keys(filters).length === 0) return true;
                 
-                // Reset available filters
-                initializeAvailableFilters();
+                let cleanRule = ruleText.replace(/[\[\]]/g, '').trim();
                 
-                // Update UI
-                updateFilterUI();
-                
-                // Reset data
-                filteredData = [...csvData];
-                currentPage = 1;
-                displayData();
-                
-                addDebugMessage("Filtri reimpostati.");
-                updateDebugPanel();
-            });
-
-            analyzeRulesBtn.addEventListener('click', function() {
-                addDebugMessage("Rianalisi delle regole richiesta dall'utente...");
-                
-                // Find the correct REGOLA column name (case insensitive)
-                const regolaColumn = headers.find(h => h.toLowerCase() === 'regola') || 'REGOLA';
-                
-                // Re-parse rules and update filters
-                parseRules(regolaColumn);
-                
-                // Reset filters
-                activeFilters = {};
-                initializeAvailableFilters();
-                
-                // Create filter controls
-                createFilterControls();
-                
-                // Reset data
-                filteredData = [...csvData];
-                currentPage = 1;
-                displayData();
-                
-                addDebugMessage("Rianalisi completata.");
-                updateDebugPanel();
-            });
-
-            toggleDebugBtn.addEventListener('click', function() {
-                debugPanel.classList.toggle('hidden');
-                updateDebugPanel();
-            });
-
-            function displayData() {
-                // Clear previous data
-                tableHeader.innerHTML = '';
-                tableBody.innerHTML = '';
-                
-                // Add headers
-                headers.forEach(header => {
-                    const th = document.createElement('th');
-                    th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
-                    th.textContent = header;
-                    tableHeader.appendChild(th);
-                });
-                
-                // Calculate pagination
-                const startIndex = (currentPage - 1) * rowsPerPage;
-                const endIndex = startIndex + rowsPerPage;
-                const paginatedData = filteredData.slice(startIndex, endIndex);
-                
-                // Add data rows
-                paginatedData.forEach(row => {
-                    const tr = document.createElement('tr');
-                    tr.className = 'hover:bg-gray-50';
+                // For each active filter, check if the rule contains a matching condition
+                for (const [field, value] of Object.entries(filters)) {
+                    let hasMatch = false;
                     
-                    headers.forEach(header => {
-                        const td = document.createElement('td');
-                        td.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-500';
+                    // First check normal field=value patterns
+                    const fieldRegex = new RegExp(`${field}\\s*=\\s*([^=]+?)(?=\\s+\\w+\\s*=|$)`, 'g');
+                    let match = fieldRegex.exec(cleanRule);
+                    
+                    if (match) {
+                        // Remove logical operators (AND, OR) only at the end
+                        const valuesPart = match[1].trim().replace(/\s+(AND|OR)\s*$/i, '').trim();
                         
-                        // Mostrare il testo originale senza formattazione
-                        td.textContent = row[header] !== null ? row[header] : '';
-                        
-                        tr.appendChild(td);
+                        if (valuesPart.startsWith('(')) {
+                            // Find the matching closing parenthesis
+                            let parenCount = 0;
+                            let endIndex = -1;
+                            
+                            for (let i = 0; i < valuesPart.length; i++) {
+                                if (valuesPart[i] === '(') parenCount++;
+                                if (valuesPart[i] === ')') {
+                                    parenCount--;
+                                    if (parenCount === 0) {
+                                        endIndex = i;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            if (endIndex !== -1) {
+                                // Extract only the content within the first set of parentheses
+                                const innerValues = valuesPart.slice(1, endIndex);
+                                const multiValues = innerValues.split(',').map(v => v.trim()).filter(v => v);
+                                hasMatch = multiValues.includes(value);
+                            }
+                        } else {
+                            hasMatch = valuesPart === value;
+                        }
+                    }
+                    
+                    // Also check for fields that appear after "and" in truncated patterns
+                    if (!hasMatch) {
+                        const truncatedFieldRegex = new RegExp(`\\)\\s+and\\s+${field}\\s*\\(([^)]+)\\)`, 'gi');
+                        let truncatedMatch = truncatedFieldRegex.exec(cleanRule);
+                        if (truncatedMatch) {
+                            const truncatedValue = truncatedMatch[1].trim();
+                            hasMatch = truncatedValue === value;
+                        }
+                    }
+                    
+                    if (!hasMatch) return false;
+                }
+                
+                return true;
+            }
+
+            function applyFilters() {
+                if (Object.keys(activeFilters).length === 0) {
+                    filteredData = [...csvData];
+                } else {
+                    const regolaColumn = headers.find(h => h.toLowerCase() === 'regola');
+                    filteredData = csvData.filter(row => {
+                        const ruleText = row[regolaColumn] || '';
+                        return matchesFilters(ruleText, activeFilters);
                     });
-                    
-                    tableBody.appendChild(tr);
-                });
+                }
                 
-                // Update pagination info
-                rowCount.textContent = filteredData.length;
-                pageInfo.textContent = `Pagina ${currentPage} di ${Math.ceil(filteredData.length / rowsPerPage) || 1}`;
-                prevPageBtn.disabled = currentPage === 1;
-                nextPageBtn.disabled = currentPage >= Math.ceil(filteredData.length / rowsPerPage);
+                currentPage = 1;
+                displayTable();
+                updateRowCount();
+                updatePagination();
+                
+                addDebugMessage(`Filtri applicati. ${filteredData.length} righe corrispondenti.`);
             }
-
-            function addDebugMessage(message, type = "info") {
-                const timestamp = new Date().toLocaleTimeString();
-                let prefix = "";
-                
-                switch(type) {
-                    case "error":
-                        prefix = "🔴 ";
-                        break;
-                    case "warning":
-                        prefix = "🟠 ";
-                        break;
-                    case "success":
-                        prefix = "🟢 ";
-                        break;
-                    default:
-                        prefix = "🔵 ";
-                }
-                
-                debugLog.push(`${prefix}[${timestamp}] ${message}`);
-                
-                // Keep log size reasonable
-                if (debugLog.length > 100) {
-                    debugLog.shift();
-                }
-            }
-
-            function updateDebugPanel() {
-                debugInfo.innerHTML = debugLog.join('<br>');
-                // Auto-scroll to bottom
-                debugInfo.scrollTop = debugInfo.scrollHeight;
-            }
-
-            prevPageBtn.addEventListener('click', function() {
-                if (currentPage > 1) {
-                    currentPage--;
-                    displayData();
-                }
-            });
-
-            nextPageBtn.addEventListener('click', function() {
-                if (currentPage < Math.ceil(filteredData.length / rowsPerPage)) {
-                    currentPage++;
-                    displayData();
-                }
-            });
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'979463d0e33003a3',t:'MTc1Njg5MzUxOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'979d8a9a4731a13f',t:'MTc1Njk4OTQ4MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
