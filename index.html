@@ -307,10 +307,23 @@
                 }
             }
 
-            // Auto-loading function
+            // Auto-loading function with timeout and fallback
             function attemptAutoLoad() {
                 csvStatus.textContent = '🔄 Auto-loading rules in progress...';
                 csvStatus.className = 'text-sm text-blue-600';
+                
+                let autoLoadCompleted = false;
+                
+                // Set a timeout to fallback to manual upload if auto-load takes too long
+                const timeoutId = setTimeout(() => {
+                    if (!autoLoadCompleted) {
+                        console.warn('Auto-load timeout - falling back to manual upload');
+                        csvStatus.textContent = '⏱️ Auto-load timeout. Please upload your CSV file manually.';
+                        csvStatus.className = 'text-sm text-orange-600';
+                        manualUploadSection.classList.remove('hidden');
+                        setupManualUpload();
+                    }
+                }, 5000); // 5 second timeout
                 
                 // Try to load the CSV data automatically
                 const csvContent = `ID;DESCRIZIONE;PREZZO;REGOLA;TYPE
@@ -337,22 +350,49 @@
                 
                 setTimeout(() => {
                     try {
-                        parseCSVContent(csvContent);
-                        csvStatus.textContent = '✅ Rules loaded successfully!';
-                        csvStatus.className = 'text-sm text-green-600';
-                        
-                        setTimeout(() => {
-                            showDataSection();
-                        }, 500);
+                        if (!autoLoadCompleted) {
+                            parseCSVContent(csvContent);
+                            autoLoadCompleted = true;
+                            clearTimeout(timeoutId);
+                            
+                            csvStatus.textContent = '✅ Rules loaded successfully!';
+                            csvStatus.className = 'text-sm text-green-600';
+                            
+                            setTimeout(() => {
+                                showDataSection();
+                            }, 500);
+                        }
                         
                     } catch (error) {
                         console.error('Auto-load failed:', error);
+                        autoLoadCompleted = true;
+                        clearTimeout(timeoutId);
+                        
                         csvStatus.textContent = '❌ Auto-load failed. Please upload manually.';
                         csvStatus.className = 'text-sm text-red-600';
                         manualUploadSection.classList.remove('hidden');
                         setupManualUpload();
                     }
-                }, 1000);
+                }, 1500); // Slightly longer delay to simulate loading
+                
+                // Add a manual override button for immediate fallback
+                setTimeout(() => {
+                    if (!autoLoadCompleted) {
+                        const skipButton = document.createElement('button');
+                        skipButton.textContent = 'Skip Auto-load & Upload Manually';
+                        skipButton.className = 'ml-4 px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700';
+                        skipButton.onclick = () => {
+                            autoLoadCompleted = true;
+                            clearTimeout(timeoutId);
+                            csvStatus.textContent = '📁 Please upload your CSV file manually.';
+                            csvStatus.className = 'text-sm text-gray-600';
+                            manualUploadSection.classList.remove('hidden');
+                            setupManualUpload();
+                            skipButton.remove();
+                        };
+                        csvStatus.parentElement.appendChild(skipButton);
+                    }
+                }, 2000); // Show skip button after 2 seconds
             }
 
             function setupManualUpload() {
@@ -1720,5 +1760,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97a52b2743aabdd9',t:'MTc1NzA2OTQ1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97a532ac572cbe0e',t:'MTc1NzA2OTc2NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
