@@ -628,9 +628,9 @@
                 nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
             }
 
-            // Original parseRules function from version 13
+            // Completely rewritten parseRules function with ultra-precise field isolation
             function parseRules(regolaColumn = 'REGOLA') {
-                addDebugMessage("Starting rule analysis...");
+                addDebugMessage("Starting ULTRA-PRECISE rule analysis...");
                 ruleFields = {};
                 
                 // Find the correct column name (case insensitive)
@@ -638,8 +638,6 @@
                 
                 // Process each row's REGOLA column
                 let ruleCount = 0;
-                let fieldCount = 0;
-                let patternFound = 0;
                 
                 csvData.forEach((row, index) => {
                     const ruleText = row[actualColumn];
@@ -650,132 +648,127 @@
                         addDebugMessage(`Analyzing rule #${index+1}: "${ruleText}"`);
                     }
                     
-                    // First, handle square brackets by removing them for parsing
-                    let cleanRuleText = ruleText;
-                    const hasBrackets = ruleText.includes('[') && ruleText.includes(']');
+                    // Remove square brackets for parsing
+                    let cleanRuleText = ruleText.replace(/[\[\]]/g, '').trim();
                     
-                    if (hasBrackets) {
-                        cleanRuleText = ruleText.replace(/[\[\]]/g, '');
-                        if (ruleCount <= 5) {
-                            addDebugMessage(`  Removed square brackets for analysis: "${cleanRuleText}"`);
-                        }
+                    if (ruleCount <= 5) {
+                        addDebugMessage(`  Clean rule: "${cleanRuleText}"`);
                     }
                     
-                    // Try to find field=value patterns with flexible spacing around =
-                    const fieldRegex = /(\w+)\s*=\s*([^=]+?)(?=\s+\w+\s*=|$)/g;
-                    let match;
-                    let foundInThisRule = false;
-                    
-                    while ((match = fieldRegex.exec(cleanRuleText)) !== null) {
-                        foundInThisRule = true;
-                        patternFound++;
-                        
-                        const field = match[1].trim();
-                        const valuesPart = match[2].trim();
-                        
-                        if (ruleCount <= 5) {
-                            addDebugMessage(`  Field found: "${field}" with expression: "${valuesPart}"`);
-                        }
-                        
-                        // Initialize field if not exists
-                        if (!ruleFields[field]) {
-                            ruleFields[field] = new Set();
-                            fieldCount++;
-                        }
-                        
-                        // Extract values, properly handling logical operators and parentheses
-                        extractValues(field, valuesPart, ruleCount);
-                    }
-                    
-                    if (!foundInThisRule && ruleCount <= 10) {
-                        addDebugMessage(`  No field=value pattern found in rule #${index+1}`, "warning");
-                    }
+                    // Parse with ultra-precise field isolation
+                    parseWithUltraPrecision(cleanRuleText, ruleCount);
                 });
                 
-                // Convert Sets to Arrays
+                // Convert Sets to Arrays and sort
                 Object.keys(ruleFields).forEach(field => {
                     ruleFields[field] = Array.from(ruleFields[field]).sort();
                 });
                 
-                addDebugMessage(`Analysis completed. Found ${fieldCount} fields in ${ruleCount} rules. Patterns recognized: ${patternFound}`);
-                addDebugMessage("Extracted fields and values:");
+                addDebugMessage(`Analysis completed. Found ${Object.keys(ruleFields).length} fields in ${ruleCount} rules.`);
+                addDebugMessage("Final extracted fields and values:");
                 Object.keys(ruleFields).forEach(field => {
-                    addDebugMessage(`  ${field}: ${ruleFields[field].join(', ')}`);
+                    addDebugMessage(`  ${field}: [${ruleFields[field].join(', ')}]`);
                 });
                 
                 updateDebugPanel();
             }
 
-            // parseTypeField function removed - was causing initialization issues
-
-            function extractValues(field, valuesPart, ruleCount) {
-                // Remove logical operators (AND, OR) only at the end - they separate different field=value pairs
-                let cleanValues = valuesPart.replace(/\s+(AND|OR)\s*$/i, '').trim();
+            function parseWithUltraPrecision(ruleText, ruleCount) {
+                // Split by AND/OR first to get individual conditions
+                const conditions = ruleText.split(/\s+(?:AND|OR)\s+/i);
                 
                 if (ruleCount <= 5) {
-                    addDebugMessage(`    Processing values for ${field}: "${cleanValues}"`);
+                    addDebugMessage(`  Split into ${conditions.length} conditions: [${conditions.join(' | ')}]`);
+                }
+                
+                conditions.forEach((condition, condIndex) => {
+                    const trimmedCondition = condition.trim();
+                    
+                    // Look for exact FIELD=VALUE pattern
+                    const exactMatch = trimmedCondition.match(/^(\w+)\s*=\s*(.+)$/);
+                    
+                    if (exactMatch) {
+                        const field = exactMatch[1].trim();
+                        const valuesPart = exactMatch[2].trim();
+                        
+                        if (ruleCount <= 5) {
+                            addDebugMessage(`    Condition ${condIndex+1}: Field="${field}", Values="${valuesPart}"`);
+                        }
+                        
+                        // Initialize field if not exists
+                        if (!ruleFields[field]) {
+                            ruleFields[field] = new Set();
+                        }
+                        
+                        // Extract values with ultra-strict validation
+                        extractValuesUltraPrecise(field, valuesPart, ruleCount, condIndex);
+                    } else if (ruleCount <= 5) {
+                        addDebugMessage(`    Condition ${condIndex+1}: REJECTED - doesn't match FIELD=VALUE pattern: "${trimmedCondition}"`);
+                    }
+                });
+            }
+
+            function extractValuesUltraPrecise(field, valuesPart, ruleCount, condIndex) {
+                if (ruleCount <= 5) {
+                    addDebugMessage(`      Extracting values for ${field} from: "${valuesPart}"`);
                 }
                 
                 // Handle parentheses for multiple values
-                if (cleanValues.startsWith('(')) {
-                    // Find the matching closing parenthesis
-                    let parenCount = 0;
-                    let endIndex = -1;
+                if (valuesPart.startsWith('(') && valuesPart.endsWith(')')) {
+                    // Extract content within parentheses
+                    const innerValues = valuesPart.slice(1, -1);
+                    const values = innerValues.split(',').map(v => v.trim()).filter(v => v && v !== '');
                     
-                    for (let i = 0; i < cleanValues.length; i++) {
-                        if (cleanValues[i] === '(') parenCount++;
-                        if (cleanValues[i] === ')') {
-                            parenCount--;
-                            if (parenCount === 0) {
-                                endIndex = i;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    if (endIndex !== -1) {
-                        // Extract only the content within the first set of parentheses
-                        const innerValues = cleanValues.slice(1, endIndex);
-                        const values = innerValues.split(',').map(v => v.trim()).filter(v => v);
-                        
-                        values.forEach(value => {
-                            ruleFields[field].add(value);
-                            if (ruleCount <= 5) {
-                                addDebugMessage(`      Aggiunto valore: "${value}"`);
-                            }
-                        });
-                        
-                        // Check if there's more content after the closing parenthesis (like "and DOOR_VOLTAGE (80VDC")
-                        const remainingText = cleanValues.slice(endIndex + 1).trim();
-                        if (remainingText) {
-                            const nextFieldMatch = remainingText.match(/^\s*and\s+(\w+)\s*\(([^)]+)\)/i);
-                            if (nextFieldMatch) {
-                                const nextField = nextFieldMatch[1].trim();
-                                const nextValue = nextFieldMatch[2].trim();
-                                if (!ruleFields[nextField]) {
-                                    ruleFields[nextField] = new Set();
-                                }
-                                ruleFields[nextField].add(nextValue);
-                                if (ruleCount <= 5) {
-                                    addDebugMessage(`      Trovato campo aggiuntivo: "${nextField}" con valore: "${nextValue}"`);
-                                }
-                            }
-                        }
-                    } else {
-                        // Malformed parentheses, treat as single value
-                        ruleFields[field].add(cleanValues);
-                        if (ruleCount <= 5) {
-                            addDebugMessage(`      Aggiunto valore con parentesi malformate: "${cleanValues}"`);
-                        }
-                    }
-                } else {
-                    // Single value without parentheses
-                    ruleFields[field].add(cleanValues);
                     if (ruleCount <= 5) {
-                        addDebugMessage(`      Aggiunto valore singolo: "${cleanValues}"`);
+                        addDebugMessage(`        Multi-value detected: [${values.join(', ')}]`);
+                    }
+                    
+                    values.forEach(value => {
+                        const cleanValue = value.trim();
+                        if (isValidValue(cleanValue)) {
+                            ruleFields[field].add(cleanValue);
+                            if (ruleCount <= 5) {
+                                addDebugMessage(`          ✓ Added: "${cleanValue}"`);
+                            }
+                        } else if (ruleCount <= 5) {
+                            addDebugMessage(`          ✗ Rejected: "${cleanValue}"`);
+                        }
+                    });
+                } else {
+                    // Single value - ultra-strict validation
+                    const cleanValue = valuesPart.trim();
+                    
+                    if (ruleCount <= 5) {
+                        addDebugMessage(`        Single value detected: "${cleanValue}"`);
+                    }
+                    
+                    if (isValidValue(cleanValue)) {
+                        ruleFields[field].add(cleanValue);
+                        if (ruleCount <= 5) {
+                            addDebugMessage(`          ✓ Added: "${cleanValue}"`);
+                        }
+                    } else if (ruleCount <= 5) {
+                        addDebugMessage(`          ✗ Rejected: "${cleanValue}"`);
                     }
                 }
             }
+
+            function isValidValue(value) {
+                // Ultra-strict validation: reject anything that looks like it contains other field data
+                if (!value || value.trim() === '') return false;
+                if (value.includes('=')) return false;
+                if (value.toUpperCase().includes('AND')) return false;
+                if (value.toUpperCase().includes('OR')) return false;
+                if (value.includes('(') || value.includes(')')) return false;
+                
+                // Additional check: reject if it looks like multiple words that might be field names
+                const words = value.trim().split(/\s+/);
+                if (words.length > 3) return false; // Reject overly long "values"
+                
+                return true;
+            }
+
+
 
             function createFilters() {
                 addDebugMessage("=== CREATING FILTERS ===");
@@ -867,123 +860,117 @@
                 
                 addDebugMessage(`Current active filters: ${JSON.stringify(activeFilters)}`);
                 
-                // For each field, calculate which values are available based on current filter selection
+                if (Object.keys(activeFilters).length === 0) {
+                    // No filters active - all values should be available
+                    Object.keys(ruleFields).forEach(field => {
+                        availableFilters[field] = [...ruleFields[field]];
+                    });
+                    addDebugMessage("No active filters - all values available for all fields");
+                    return;
+                }
+                
+                // Get current result set (materials that would be shown with current filters)
+                const currentResultSet = getCurrentResultSet();
+                addDebugMessage(`Current result set has ${currentResultSet.length} materials`);
+                
+                // For each field, find values that exist in the current result set
                 Object.keys(ruleFields).forEach(field => {
                     addDebugMessage(`Calculating available values for field: ${field}`);
                     availableFilters[field] = new Set();
                     
-                    let matchingRows = 0;
-                    let totalRowsChecked = 0;
-                    
-                    // Check each row to see what values are available for this field
-                    csvData.forEach((row, index) => {
-                        totalRowsChecked++;
+                    // Extract values from all materials in current result set
+                    currentResultSet.forEach((row, index) => {
+                        const ruleText = row[headers.find(h => h.toLowerCase() === 'regola')] || '';
                         
-                        // Create a filter set excluding the current field we're calculating
-                        const otherActiveFilters = { ...activeFilters };
-                        delete otherActiveFilters[field];
-                        
-                        // Only log first few rows to avoid spam
-                        if (index < 3) {
-                            addDebugMessage(`  Row ${index+1}: Checking compatibility with filters: ${JSON.stringify(otherActiveFilters)}`);
+                        if (index < 5) {
+                            addDebugMessage(`  Material ${index+1}: "${ruleText}"`);
                         }
                         
-                        // Check if this row matches all OTHER active filters
-                        if (matchesAllFilters(row, otherActiveFilters)) {
-                            matchingRows++;
-                            
-                            // Extract values for this field from the REGOLA column
-                            const ruleText = row[headers.find(h => h.toLowerCase() === 'regola')] || '';
-                            if (ruleText && ruleText.trim() !== '') {
-                                const fieldValues = extractFieldValuesFromRule(ruleText, field);
-                                if (index < 3) {
-                                    addDebugMessage(`    Row ${index+1} compatible. Extracted values for ${field}: [${fieldValues.join(', ')}]`);
-                                }
-                                
-                                fieldValues.forEach(value => {
-                                    if (value && value.trim()) {
-                                        availableFilters[field].add(value.trim());
-                                        if (index < 3) {
-                                            addDebugMessage(`      Added available value: "${value.trim()}"`);
-                                        }
-                                    }
-                                });
-                            } else if (index < 3) {
-                                addDebugMessage(`    Row ${index+1} compatible but no valid rule`);
+                        // Extract values for this field from the material's REGOLA
+                        const fieldValues = extractFieldValuesFromRule(ruleText, field);
+                        
+                        if (index < 5) {
+                            addDebugMessage(`    Values for ${field}: [${fieldValues.join(', ')}]`);
+                        }
+                        
+                        fieldValues.forEach(value => {
+                            if (value && value.trim()) {
+                                availableFilters[field].add(value.trim());
                             }
-                        } else if (index < 3) {
-                            addDebugMessage(`    Row ${index+1} NOT compatible with active filters`);
+                        });
+                        
+                        // Check if this material has no restrictions on this field
+                        // If so, add all possible values for this field
+                        const restrictedFields = extractRestrictedFields(ruleText);
+                        if (!restrictedFields.includes(field)) {
+                            ruleFields[field].forEach(value => {
+                                availableFilters[field].add(value);
+                            });
+                            if (index < 5) {
+                                addDebugMessage(`    Material has no restrictions on ${field} - added all values`);
+                            }
                         }
                     });
                     
                     availableFilters[field] = Array.from(availableFilters[field]).sort();
-                    addDebugMessage(`  Field ${field}: ${totalRowsChecked} rows checked, ${matchingRows} compatible rows, ${availableFilters[field].length} available values`);
+                    addDebugMessage(`  Field ${field}: ${availableFilters[field].length} available values`);
                     addDebugMessage(`  Available values: [${availableFilters[field].join(', ')}]`);
-                    
-                    // If no filters are active, all values should be available (but materials list stays empty)
-                    if (Object.keys(activeFilters).length === 0) {
-                        availableFilters[field] = [...ruleFields[field]];
-                        addDebugMessage(`  No active filters - all values available for ${field}`);
-                    }
                 });
                 
                 addDebugMessage("=== END UPDATING AVAILABLE FILTERS ===");
             }
 
+            function getCurrentResultSet() {
+                // This function returns the materials that would be shown with current active filters
+                // Same logic as applyFilters but without updating filteredData
+                
+                if (Object.keys(activeFilters).length === 0) {
+                    return []; // Empty when no filters
+                }
+                
+                // Use the same logic as applyFilters
+                return csvData.filter(row => {
+                    return matchesAllFilters(row, activeFilters);
+                });
+            }
+
             function extractFieldValuesFromRule(ruleText, targetField) {
                 const values = [];
-                let cleanRuleText = ruleText.replace(/[\[\]]/g, '');
+                let cleanRuleText = ruleText.replace(/[\[\]]/g, '').trim();
                 
-                const fieldRegex = /(\w+)\s*=\s*([^=]+?)(?=\s+\w+\s*=|$)/g;
-                let match;
+                // Split by AND/OR first to get individual conditions (same as parsing)
+                const conditions = cleanRuleText.split(/\s+(?:AND|OR)\s+/i);
                 
-                while ((match = fieldRegex.exec(cleanRuleText)) !== null) {
-                    const field = match[1].trim();
-                    const valuesPart = match[2].trim();
+                conditions.forEach(condition => {
+                    const trimmedCondition = condition.trim();
                     
-                    if (field === targetField) {
-                        // Remove logical operators (AND, OR) only at the end
-                        let cleanValues = valuesPart.replace(/\s+(AND|OR)\s*$/i, '').trim();
+                    // Look for exact FIELD=VALUE pattern
+                    const exactMatch = trimmedCondition.match(/^(\w+)\s*=\s*(.+)$/);
+                    
+                    if (exactMatch) {
+                        const field = exactMatch[1].trim();
+                        const valuesPart = exactMatch[2].trim();
                         
-                        if (cleanValues.startsWith('(')) {
-                            // Find the matching closing parenthesis
-                            let parenCount = 0;
-                            let endIndex = -1;
-                            
-                            for (let i = 0; i < cleanValues.length; i++) {
-                                if (cleanValues[i] === '(') parenCount++;
-                                if (cleanValues[i] === ')') {
-                                    parenCount--;
-                                    if (parenCount === 0) {
-                                        endIndex = i;
-                                        break;
+                        if (field === targetField) {
+                            // Handle parentheses for multiple values
+                            if (valuesPart.startsWith('(') && valuesPart.endsWith(')')) {
+                                const innerValues = valuesPart.slice(1, -1);
+                                const multiValues = innerValues.split(',').map(v => v.trim()).filter(v => v && v !== '');
+                                
+                                multiValues.forEach(value => {
+                                    if (isValidValue(value)) {
+                                        values.push(value);
                                     }
+                                });
+                            } else {
+                                // Single value - ultra-strict validation
+                                if (isValidValue(valuesPart)) {
+                                    values.push(valuesPart);
                                 }
                             }
-                            
-                            if (endIndex !== -1) {
-                                // Extract only the content within the first set of parentheses
-                                const innerValues = cleanValues.slice(1, endIndex);
-                                const multiValues = innerValues.split(',').map(v => v.trim()).filter(v => v);
-                                values.push(...multiValues);
-                            }
-                        } else {
-                            values.push(cleanValues);
                         }
                     }
-                }
-                
-                // Also check for fields that appear after "and" in truncated patterns
-                const truncatedFieldRegex = /\)\s+and\s+(\w+)\s*\(([^)]+)\)/gi;
-                let truncatedMatch;
-                while ((truncatedMatch = truncatedFieldRegex.exec(cleanRuleText)) !== null) {
-                    const field = truncatedMatch[1].trim();
-                    const value = truncatedMatch[2].trim();
-                    
-                    if (field === targetField) {
-                        values.push(value);
-                    }
-                }
+                });
                 
                 return values;
             }
@@ -993,80 +980,190 @@
                     return true;
                 }
                 
+                const ruleText = row[headers.find(h => h.toLowerCase() === 'regola')] || '';
+                const materialId = row.ID || row.id || 'unknown';
+                
+                addDebugMessage(`Checking material ${materialId} with rule: "${ruleText}"`);
+                
+                // Check if this material has ANY restrictions in its REGOLA
+                if (!ruleText || ruleText.trim() === '') {
+                    // No restrictions - this is a general material, matches everything
+                    addDebugMessage(`  Material ${materialId}: No restrictions - MATCHES`);
+                    return true;
+                }
+                
+                // Parse the rule to understand what fields it restricts
+                const restrictedFields = extractRestrictedFields(ruleText);
+                addDebugMessage(`  Material ${materialId} restricts fields: [${restrictedFields.join(', ')}]`);
+                
+                // For each active filter, check if the material matches
                 for (const [field, value] of Object.entries(filters)) {
-                    // For ALL fields, check ONLY in REGOLA column
-                    const ruleText = row[headers.find(h => h.toLowerCase() === 'regola')] || '';
-                    const matches = matchesRuleFilter(ruleText, field, value);
+                    addDebugMessage(`  Checking filter ${field}=${value}`);
                     
-                    if (!matches) {
-                        return false;
+                    if (restrictedFields.includes(field)) {
+                        // Material has restrictions on this field - must match exactly
+                        const matches = matchesRuleFilter(ruleText, field, value);
+                        addDebugMessage(`    Field ${field} is restricted - exact match: ${matches}`);
+                        if (!matches) {
+                            addDebugMessage(`  Material ${materialId}: REJECTED - doesn't match ${field}=${value}`);
+                            return false;
+                        }
+                    } else {
+                        // Material doesn't restrict this field - it's compatible with any value
+                        addDebugMessage(`    Field ${field} is not restricted - compatible with any value`);
                     }
                 }
                 
+                addDebugMessage(`  Material ${materialId}: MATCHES all filters`);
                 return true;
             }
 
             function matchesRuleFilter(ruleText, field, value) {
                 let cleanRule = ruleText.replace(/[\[\]]/g, '').trim();
                 
-                // First check normal field=value patterns
-                const fieldRegex = new RegExp(`${field}\\s*=\\s*([^=]+?)(?=\\s+\\w+\\s*=|$)`, 'g');
-                let match = fieldRegex.exec(cleanRule);
+                // Split by AND/OR first to get individual conditions (same as parsing)
+                const conditions = cleanRule.split(/\s+(?:AND|OR)\s+/i);
                 
-                if (match) {
-                    // Remove logical operators (AND, OR) only at the end
-                    const valuesPart = match[1].trim().replace(/\s+(AND|OR)\s*$/i, '').trim();
+                for (const condition of conditions) {
+                    const trimmedCondition = condition.trim();
                     
-                    if (valuesPart.startsWith('(')) {
-                        // Find the matching closing parenthesis
-                        let parenCount = 0;
-                        let endIndex = -1;
+                    // Look for exact FIELD=VALUE pattern
+                    const exactMatch = trimmedCondition.match(/^(\w+)\s*=\s*(.+)$/);
+                    
+                    if (exactMatch) {
+                        const conditionField = exactMatch[1].trim();
+                        const valuesPart = exactMatch[2].trim();
                         
-                        for (let i = 0; i < valuesPart.length; i++) {
-                            if (valuesPart[i] === '(') parenCount++;
-                            if (valuesPart[i] === ')') {
-                                parenCount--;
-                                if (parenCount === 0) {
-                                    endIndex = i;
-                                    break;
+                        if (conditionField === field) {
+                            // Handle parentheses for multiple values
+                            if (valuesPart.startsWith('(') && valuesPart.endsWith(')')) {
+                                const innerValues = valuesPart.slice(1, -1);
+                                const multiValues = innerValues.split(',').map(v => v.trim()).filter(v => v && v !== '');
+                                
+                                // Check if any of the valid values match
+                                for (const multiValue of multiValues) {
+                                    if (isValidValue(multiValue) && multiValue === value) {
+                                        return true;
+                                    }
+                                }
+                            } else {
+                                // Single value - ultra-strict validation and comparison
+                                if (isValidValue(valuesPart) && valuesPart === value) {
+                                    return true;
                                 }
                             }
                         }
-                        
-                        if (endIndex !== -1) {
-                            // Extract only the content within the first set of parentheses
-                            const innerValues = valuesPart.slice(1, endIndex);
-                            const multiValues = innerValues.split(',').map(v => v.trim()).filter(v => v);
-                            return multiValues.includes(value);
-                        }
-                    } else {
-                        return valuesPart === value;
                     }
-                }
-                
-                // Also check for fields that appear after "and" in truncated patterns
-                const truncatedFieldRegex = new RegExp(`\\)\\s+and\\s+${field}\\s*\\(([^)]+)\\)`, 'gi');
-                let truncatedMatch = truncatedFieldRegex.exec(cleanRule);
-                if (truncatedMatch) {
-                    const truncatedValue = truncatedMatch[1].trim();
-                    return truncatedValue === value;
                 }
                 
                 return false;
             }
 
+            function isGeneralMaterial(row, currentActiveFilters) {
+                // Find REGOLA column
+                const regolaColumn = headers.find(h => h.toLowerCase() === 'regola');
+                if (!regolaColumn) return false;
+                
+                const ruleText = row[regolaColumn] || '';
+                const cleanRule = ruleText.replace(/[\[\]]/g, '').trim();
+                const materialId = row.ID || row.id || 'unknown';
+                
+                // Consider a material "general" if:
+                // 1. No REGOLA at all (empty or whitespace) - these are universal
+                if (!cleanRule || cleanRule === '') {
+                    addDebugMessage(`Material ${materialId} is general: empty REGOLA`);
+                    return true;
+                }
+                
+                // 2. REGOLA doesn't contain ANY of the currently active filter fields
+                // This means the material doesn't have restrictions on the fields we're filtering by
+                const activeFilterFields = Object.keys(currentActiveFilters);
+                const hasAnyActiveFilterField = activeFilterFields.some(field => {
+                    const fieldPattern = new RegExp(`\\b${field}\\s*=`, 'i');
+                    const hasField = fieldPattern.test(cleanRule);
+                    if (hasField) {
+                        addDebugMessage(`Material ${materialId} has restriction on active filter field ${field}`);
+                    }
+                    return hasField;
+                });
+                
+                if (!hasAnyActiveFilterField && activeFilterFields.length > 0) {
+                    addDebugMessage(`Material ${materialId} is general: no restrictions on active filter fields [${activeFilterFields.join(', ')}] in REGOLA "${cleanRule}"`);
+                    return true;
+                }
+                
+                // 3. Check if REGOLA has restrictions on other fields but not on active ones
+                // Parse the rule to see what fields it actually restricts
+                const restrictedFields = extractRestrictedFields(cleanRule);
+                const hasRestrictionsOnActiveFields = activeFilterFields.some(field => 
+                    restrictedFields.includes(field)
+                );
+                
+                if (!hasRestrictionsOnActiveFields && restrictedFields.length > 0) {
+                    addDebugMessage(`Material ${materialId} is general: has restrictions on [${restrictedFields.join(', ')}] but not on active fields [${activeFilterFields.join(', ')}]`);
+                    return true;
+                }
+                
+                return false;
+            }
+
+            function extractRestrictedFields(ruleText) {
+                const fields = [];
+                const cleanRule = ruleText.replace(/[\[\]]/g, '').trim();
+                
+                // Split by AND/OR to get individual conditions
+                const conditions = cleanRule.split(/\s+(?:AND|OR)\s+/i);
+                
+                conditions.forEach(condition => {
+                    const trimmedCondition = condition.trim();
+                    const exactMatch = trimmedCondition.match(/^(\w+)\s*=\s*(.+)$/);
+                    
+                    if (exactMatch) {
+                        const field = exactMatch[1].trim();
+                        if (!fields.includes(field)) {
+                            fields.push(field);
+                        }
+                    }
+                });
+                
+                return fields;
+            }
+
             function applyFilters() {
+                addDebugMessage("=== APPLYING FILTERS ===");
+                addDebugMessage(`Active filters: ${JSON.stringify(activeFilters)}`);
+                
                 if (Object.keys(activeFilters).length === 0) {
                     // No filters selected - keep materials list empty
                     filteredData = [];
-                    addDebugMessage("No filters selected - materials list remains empty");
+                    addDebugMessage("No filters selected - materials list remain empty");
                 } else {
-                    // Apply filters and show matching materials
-                    filteredData = csvData.filter(row => {
-                        return matchesAllFilters(row, activeFilters);
+                    // Apply filters and show matching materials + general materials
+                    addDebugMessage("Finding specific matches...");
+                    const specificMatches = csvData.filter(row => {
+                        const matches = matchesAllFilters(row, activeFilters);
+                        if (matches) {
+                            const materialId = row.ID || row.id || 'unknown';
+                            addDebugMessage(`  Material ${materialId} matches specific filters`);
+                        }
+                        return matches;
                     });
-                    addDebugMessage(`Filters applied. ${filteredData.length} matching materials found.`);
+                    
+                    // The matchesAllFilters function now handles both specific and general materials
+                    // No need for separate general material logic
+                    filteredData = specificMatches;
+                    addDebugMessage(`Final result: ${filteredData.length} total materials`);
+                    
+                    // Log first few results for debugging
+                    addDebugMessage("First few results:");
+                    filteredData.slice(0, 5).forEach((row, index) => {
+                        const materialId = row.ID || row.id || 'unknown';
+                        const ruleText = row[headers.find(h => h.toLowerCase() === 'regola')] || '';
+                        addDebugMessage(`  ${index + 1}. ${materialId}: "${ruleText}"`);
+                    });
                 }
+                
+                addDebugMessage("=== END APPLYING FILTERS ===");
                 
                 currentPage = 1;
                 displayTable();
@@ -1110,5 +1207,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97a3b35963a34c45',t:'MTc1NzA1NDA2My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97a49f7690791b6f',t:'MTc1NzA2MzczNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
