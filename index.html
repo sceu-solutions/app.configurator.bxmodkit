@@ -329,49 +329,42 @@
                 csvStatus.textContent = 'Auto-loading sample data...';
                 csvStatus.className = 'text-sm text-blue-600';
                 
-                // Try to load the CSV file automatically
+                // Try to load the CSV file automatically from the same directory
                 setTimeout(() => {
-                    console.log('Attempting auto-load...');
+                    console.log('Attempting to load regole-prodotto-WebApp-BX MOD KIT.csv...');
                     
-                    // Attempt to load a default CSV file
-                    const csvContent = `ID;DESCRIZIONE;PREZZO;REGOLA;TYPE
-1;Base Module Standard;150.50;[TIPO=STANDARD AND ALTEZZA=2000];MATERIAL
-2;Base Module Premium;220.75;[TIPO=PREMIUM AND ALTEZZA=2000];MATERIAL
-3;Extension Kit 500mm;85.25;[TIPO=(STANDARD,PREMIUM) AND ALTEZZA=2500];MATERIAL
-4;Extension Kit 1000mm;165.50;[TIPO=(STANDARD,PREMIUM) AND ALTEZZA=3000];MATERIAL
-5;Safety Kit Basic;95.00;[TIPO=STANDARD];MATERIAL
-6;Safety Kit Advanced;145.00;[TIPO=PREMIUM];MATERIAL
-7;Control Panel Standard;320.00;[TIPO=STANDARD AND CONTROLLO=BASIC];MATERIAL
-8;Control Panel Premium;480.00;[TIPO=PREMIUM AND CONTROLLO=ADVANCED];MATERIAL
-9;Door Kit Standard;275.00;[TIPO=STANDARD AND PORTA=SINGLE];MATERIAL
-10;Door Kit Double;385.00;[TIPO=(STANDARD,PREMIUM) AND PORTA=DOUBLE];MATERIAL
-11;Lighting Kit LED;125.00;[TIPO=(STANDARD,PREMIUM)];MATERIAL
-12;Emergency Kit;195.00;[];MATERIAL
-13;Maintenance Kit;85.00;[];MATERIAL
-14;Installation Hardware;45.00;[];MATERIAL
-15;Cable Kit 10m;65.00;[ALTEZZA=(2000,2500)];MATERIAL
-16;Cable Kit 20m;95.00;[ALTEZZA=3000];MATERIAL`;
-
-                    try {
-                        console.log('Parsing CSV content...');
-                        parseCSVContent(csvContent);
-                        
-                        csvStatus.textContent = 'Sample data loaded successfully! ✅';
-                        csvStatus.className = 'text-sm text-green-600';
-                        
-                        // Hide manual upload and show data
-                        setTimeout(() => {
-                            console.log('Showing data section...');
-                            manualUploadSection.classList.add('hidden');
-                            showDataSection();
-                        }, 1000);
-                        
-                    } catch (error) {
-                        console.error('Auto-load failed:', error);
-                        // Keep manual upload visible
-                        csvStatus.textContent = 'Auto-loading failed. Please upload your CSV file manually.';
-                        csvStatus.className = 'text-sm text-orange-600';
-                    }
+                    // Try to fetch the CSV file from the same directory
+                    fetch('./regole-prodotto-WebApp-BX MOD KIT.csv')
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            return response.text();
+                        })
+                        .then(csvContent => {
+                            console.log('CSV file loaded successfully from local directory');
+                            console.log('CSV content length:', csvContent.length);
+                            
+                            parseCSVContent(csvContent);
+                            
+                            csvStatus.textContent = 'CSV file loaded successfully! ✅';
+                            csvStatus.className = 'text-sm text-green-600';
+                            
+                            // Hide manual upload and show data
+                            setTimeout(() => {
+                                console.log('Showing data section...');
+                                manualUploadSection.classList.add('hidden');
+                                showDataSection();
+                            }, 1000);
+                        })
+                        .catch(error => {
+                            console.error('Failed to load CSV file:', error);
+                            csvStatus.textContent = 'CSV file not found in directory. Please upload manually.';
+                            csvStatus.className = 'text-sm text-orange-600';
+                            
+                            // Keep manual upload visible as fallback
+                            console.log('Keeping manual upload visible as fallback');
+                        });
                 }, 1500);
             }
 
@@ -1751,8 +1744,7 @@
                     alert('❌ ERROR: Failed to export PDF. Please try again.');
                 }
             }
-            }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97a55d40a0881b6f',t:'MTc1NzA3MTUwOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97a56c39a39a1b6f',t:'MTc1NzA3MjEyMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
