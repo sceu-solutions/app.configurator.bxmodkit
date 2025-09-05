@@ -194,11 +194,15 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOM Content Loaded - Starting initialization...');
+            
             // Device detection and layout setup
             const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             const layoutContainer = document.getElementById('layout-container');
             const filtersColumn = document.getElementById('filters-column');
             const resultsColumn = document.getElementById('results-column');
+            
+            console.log('📱 Device detection:', isMobile ? 'Mobile' : 'Desktop');
             
             // Apply layout based on device
             if (isMobile) {
@@ -260,6 +264,14 @@
             let startWithEmptyList = true; // New behavior: start with empty materials list
             // Price calculation will be done on visible rows only
 
+            console.log('🔍 Finding DOM elements...');
+            console.log('Elements found:', {
+                dropZone: !!dropZone,
+                fileInput: !!fileInput,
+                csvStatus: !!csvStatus,
+                manualUploadSection: !!manualUploadSection
+            });
+            
             // Setup debug panel
             setupDebugPanel();
             
@@ -272,6 +284,7 @@
             });
             
             // Setup file upload immediately
+            console.log('🔧 Starting file upload setup...');
             setupFileUpload();
 
             // Drag and drop helper functions
@@ -306,48 +319,108 @@
             }
 
             function setupFileUpload() {
+                console.log('Setting up file upload...');
+                
+                // Show manual upload immediately as fallback
+                manualUploadSection.classList.remove('hidden');
+                setupManualUpload();
+                
                 // Try to auto-load CSV first
-                csvStatus.textContent = 'Attempting to auto-load CSV data...';
+                csvStatus.textContent = 'Auto-loading sample data...';
                 csvStatus.className = 'text-sm text-blue-600';
                 
-                // Simulate auto-loading attempt
+                // Try to load the CSV file automatically
                 setTimeout(() => {
-                    csvStatus.textContent = 'Auto-loading failed. Please upload your CSV file manually.';
-                    csvStatus.className = 'text-sm text-orange-600';
-                    manualUploadSection.classList.remove('hidden');
+                    console.log('Attempting auto-load...');
                     
-                    const selectFileBtn = document.getElementById('select-file-btn');
-                    
-                    // Setup drag and drop
-                    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                        dropZone.addEventListener(eventName, preventDefaults, false);
-                    });
+                    // Attempt to load a default CSV file
+                    const csvContent = `ID;DESCRIZIONE;PREZZO;REGOLA;TYPE
+1;Base Module Standard;150.50;[TIPO=STANDARD AND ALTEZZA=2000];MATERIAL
+2;Base Module Premium;220.75;[TIPO=PREMIUM AND ALTEZZA=2000];MATERIAL
+3;Extension Kit 500mm;85.25;[TIPO=(STANDARD,PREMIUM) AND ALTEZZA=2500];MATERIAL
+4;Extension Kit 1000mm;165.50;[TIPO=(STANDARD,PREMIUM) AND ALTEZZA=3000];MATERIAL
+5;Safety Kit Basic;95.00;[TIPO=STANDARD];MATERIAL
+6;Safety Kit Advanced;145.00;[TIPO=PREMIUM];MATERIAL
+7;Control Panel Standard;320.00;[TIPO=STANDARD AND CONTROLLO=BASIC];MATERIAL
+8;Control Panel Premium;480.00;[TIPO=PREMIUM AND CONTROLLO=ADVANCED];MATERIAL
+9;Door Kit Standard;275.00;[TIPO=STANDARD AND PORTA=SINGLE];MATERIAL
+10;Door Kit Double;385.00;[TIPO=(STANDARD,PREMIUM) AND PORTA=DOUBLE];MATERIAL
+11;Lighting Kit LED;125.00;[TIPO=(STANDARD,PREMIUM)];MATERIAL
+12;Emergency Kit;195.00;[];MATERIAL
+13;Maintenance Kit;85.00;[];MATERIAL
+14;Installation Hardware;45.00;[];MATERIAL
+15;Cable Kit 10m;65.00;[ALTEZZA=(2000,2500)];MATERIAL
+16;Cable Kit 20m;95.00;[ALTEZZA=3000];MATERIAL`;
 
-                    ['dragenter', 'dragover'].forEach(eventName => {
-                        dropZone.addEventListener(eventName, highlight, false);
-                    });
+                    try {
+                        console.log('Parsing CSV content...');
+                        parseCSVContent(csvContent);
+                        
+                        csvStatus.textContent = 'Sample data loaded successfully! ✅';
+                        csvStatus.className = 'text-sm text-green-600';
+                        
+                        // Hide manual upload and show data
+                        setTimeout(() => {
+                            console.log('Showing data section...');
+                            manualUploadSection.classList.add('hidden');
+                            showDataSection();
+                        }, 1000);
+                        
+                    } catch (error) {
+                        console.error('Auto-load failed:', error);
+                        // Keep manual upload visible
+                        csvStatus.textContent = 'Auto-loading failed. Please upload your CSV file manually.';
+                        csvStatus.className = 'text-sm text-orange-600';
+                    }
+                }, 1500);
+            }
 
-                    ['dragleave', 'drop'].forEach(eventName => {
-                        dropZone.addEventListener(eventName, unhighlight, false);
-                    });
+            function setupManualUpload() {
+                console.log('📁 Setting up manual upload...');
+                const selectFileBtn = document.getElementById('select-file-btn');
+                console.log('Select file button found:', !!selectFileBtn);
+                
+                if (!dropZone || !fileInput) {
+                    console.error('❌ Missing required elements for manual upload!');
+                    return;
+                }
+                
+                // Setup drag and drop
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, preventDefaults, false);
+                });
 
-                    dropZone.addEventListener('drop', handleDrop, false);
-                    
-                    // Setup click handlers
-                    dropZone.addEventListener('click', () => {
-                        fileInput.click();
-                    });
-                    
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, highlight, false);
+                });
+
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, unhighlight, false);
+                });
+
+                dropZone.addEventListener('drop', handleDrop, false);
+                
+                // Setup click handlers
+                dropZone.addEventListener('click', () => {
+                    console.log('📁 Drop zone clicked - opening file dialog');
+                    fileInput.click();
+                });
+                
+                if (selectFileBtn) {
                     selectFileBtn.addEventListener('click', (e) => {
+                        console.log('📁 Select file button clicked');
                         e.stopPropagation();
                         fileInput.click();
                     });
-                    
-                    // Setup file input event listener
-                    fileInput.addEventListener('change', function() {
-                        handleFiles(this.files);
-                    });
-                }, 2000);
+                }
+                
+                // Setup file input event listener
+                fileInput.addEventListener('change', function() {
+                    console.log('📁 File selected:', this.files.length, 'files');
+                    handleFiles(this.files);
+                });
+                
+                console.log('✅ Manual upload setup complete');
             }
 
             function parseCSV(file) {
@@ -1681,5 +1754,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97a54eda05e2bdd9',t:'MTc1NzA3MDkxOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97a55d40a0881b6f',t:'MTc1NzA3MTUwOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
