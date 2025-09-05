@@ -271,8 +271,8 @@
                 }
             });
             
-            // Try auto-loading first
-            attemptAutoLoad();
+            // Setup file upload immediately
+            setupFileUpload();
 
             // Drag and drop helper functions
             function preventDefaults(e) {
@@ -281,11 +281,11 @@
             }
 
             function highlight() {
-                dropZone.classList.add('active');
+                dropZone.classList.add('bg-indigo-200');
             }
 
             function unhighlight() {
-                dropZone.classList.remove('active');
+                dropZone.classList.remove('bg-indigo-200');
             }
             
             function handleDrop(e) {
@@ -293,8 +293,6 @@
                 const files = dt.files;
                 handleFiles(files);
             }
-
-
 
             function handleFiles(files) {
                 if (files.length > 0) {
@@ -307,126 +305,49 @@
                 }
             }
 
-            // Auto-loading function with timeout and fallback
-            function attemptAutoLoad() {
-                csvStatus.textContent = '🔄 Auto-loading rules in progress...';
+            function setupFileUpload() {
+                // Try to auto-load CSV first
+                csvStatus.textContent = 'Attempting to auto-load CSV data...';
                 csvStatus.className = 'text-sm text-blue-600';
                 
-                let autoLoadCompleted = false;
-                
-                // Set a timeout to fallback to manual upload if auto-load takes too long
-                const timeoutId = setTimeout(() => {
-                    if (!autoLoadCompleted) {
-                        console.warn('Auto-load timeout - falling back to manual upload');
-                        csvStatus.textContent = '⏱️ Auto-load timeout. Please upload your CSV file manually.';
-                        csvStatus.className = 'text-sm text-orange-600';
-                        manualUploadSection.classList.remove('hidden');
-                        setupManualUpload();
-                    }
-                }, 5000); // 5 second timeout
-                
-                // Try to load the CSV data automatically
-                const csvContent = `ID;DESCRIZIONE;PREZZO;REGOLA;TYPE
-1;Pulsantiera BX MOD KIT Base;150.00;[];BASE
-2;Display LCD Standard;75.50;[DISPLAY=LCD];DISPLAY
-3;Display TFT Premium;125.00;[DISPLAY=TFT];DISPLAY
-4;Modulo Comunicazione GSM;89.90;[COMM=GSM];COMM
-5;Modulo Comunicazione WiFi;95.00;[COMM=WIFI];COMM
-6;Sensore Movimento PIR;45.00;[SENSOR=PIR];SENSOR
-7;Sensore Ultrasuoni;52.00;[SENSOR=ULTRASONIC];SENSOR
-8;Alimentatore 12V Standard;35.00;[POWER=12V];POWER
-9;Alimentatore 24V Industrial;48.00;[POWER=24V];POWER
-10;Cavo Connessione 2m;12.50;[];CABLE
-11;Cavo Connessione 5m;18.00;[];CABLE
-12;Kit Montaggio Parete;25.00;[MOUNT=WALL];MOUNT
-13;Kit Montaggio Soffitto;32.00;[MOUNT=CEILING];MOUNT
-14;Staffa Regolabile;15.50;[];BRACKET
-15;Viti Fissaggio M6;3.20;[];HARDWARE
-16;Display LCD + GSM;164.40;[DISPLAY=LCD AND COMM=GSM];COMBO
-17;Display TFT + WiFi;220.00;[DISPLAY=TFT AND COMM=WIFI];COMBO
-18;Sensore PIR + 12V;80.00;[SENSOR=PIR AND POWER=12V];COMBO
-19;Kit Completo Parete LCD;239.90;[DISPLAY=LCD AND MOUNT=WALL];COMBO
-20;Kit Completo Soffitto TFT;357.00;[DISPLAY=TFT AND MOUNT=CEILING];COMBO`;
-                
+                // Simulate auto-loading attempt
                 setTimeout(() => {
-                    try {
-                        if (!autoLoadCompleted) {
-                            parseCSVContent(csvContent);
-                            autoLoadCompleted = true;
-                            clearTimeout(timeoutId);
-                            
-                            csvStatus.textContent = '✅ Rules loaded successfully!';
-                            csvStatus.className = 'text-sm text-green-600';
-                            
-                            setTimeout(() => {
-                                showDataSection();
-                            }, 500);
-                        }
-                        
-                    } catch (error) {
-                        console.error('Auto-load failed:', error);
-                        autoLoadCompleted = true;
-                        clearTimeout(timeoutId);
-                        
-                        csvStatus.textContent = '❌ Auto-load failed. Please upload manually.';
-                        csvStatus.className = 'text-sm text-red-600';
-                        manualUploadSection.classList.remove('hidden');
-                        setupManualUpload();
-                    }
-                }, 1500); // Slightly longer delay to simulate loading
-                
-                // Add a manual override button for immediate fallback
-                setTimeout(() => {
-                    if (!autoLoadCompleted) {
-                        const skipButton = document.createElement('button');
-                        skipButton.textContent = 'Skip Auto-load & Upload Manually';
-                        skipButton.className = 'ml-4 px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700';
-                        skipButton.onclick = () => {
-                            autoLoadCompleted = true;
-                            clearTimeout(timeoutId);
-                            csvStatus.textContent = '📁 Please upload your CSV file manually.';
-                            csvStatus.className = 'text-sm text-gray-600';
-                            manualUploadSection.classList.remove('hidden');
-                            setupManualUpload();
-                            skipButton.remove();
-                        };
-                        csvStatus.parentElement.appendChild(skipButton);
-                    }
-                }, 2000); // Show skip button after 2 seconds
-            }
+                    csvStatus.textContent = 'Auto-loading failed. Please upload your CSV file manually.';
+                    csvStatus.className = 'text-sm text-orange-600';
+                    manualUploadSection.classList.remove('hidden');
+                    
+                    const selectFileBtn = document.getElementById('select-file-btn');
+                    
+                    // Setup drag and drop
+                    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                        dropZone.addEventListener(eventName, preventDefaults, false);
+                    });
 
-            function setupManualUpload() {
-                const selectFileBtn = document.getElementById('select-file-btn');
-                
-                // Setup drag and drop
-                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                    dropZone.addEventListener(eventName, preventDefaults, false);
-                });
+                    ['dragenter', 'dragover'].forEach(eventName => {
+                        dropZone.addEventListener(eventName, highlight, false);
+                    });
 
-                ['dragenter', 'dragover'].forEach(eventName => {
-                    dropZone.addEventListener(eventName, highlight, false);
-                });
+                    ['dragleave', 'drop'].forEach(eventName => {
+                        dropZone.addEventListener(eventName, unhighlight, false);
+                    });
 
-                ['dragleave', 'drop'].forEach(eventName => {
-                    dropZone.addEventListener(eventName, unhighlight, false);
-                });
-
-                dropZone.addEventListener('drop', handleDrop, false);
-                
-                // Setup click handlers
-                dropZone.addEventListener('click', () => {
-                    fileInput.click();
-                });
-                
-                selectFileBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    fileInput.click();
-                });
-                
-                // Setup file input event listener
-                fileInput.addEventListener('change', function() {
-                    handleFiles(this.files);
-                });
+                    dropZone.addEventListener('drop', handleDrop, false);
+                    
+                    // Setup click handlers
+                    dropZone.addEventListener('click', () => {
+                        fileInput.click();
+                    });
+                    
+                    selectFileBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        fileInput.click();
+                    });
+                    
+                    // Setup file input event listener
+                    fileInput.addEventListener('change', function() {
+                        handleFiles(this.files);
+                    });
+                }, 2000);
             }
 
             function parseCSV(file) {
@@ -1760,5 +1681,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97a532ac572cbe0e',t:'MTc1NzA2OTc2NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97a54eda05e2bdd9',t:'MTc1NzA3MDkxOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
