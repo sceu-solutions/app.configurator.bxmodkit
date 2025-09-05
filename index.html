@@ -12,7 +12,7 @@
         <div class="bg-white rounded-2xl shadow-xl p-6 mb-8">
             <div class="text-center">
                 <div class="text-2xl font-bold text-red-600 mb-2" style="color: #DC2626;">Schindler SA</div>
-                <h1 class="text-3xl font-bold text-gray-800">BX Mod KIT - Light configurator</h1>
+                <h1 class="text-3xl font-bold text-gray-800">BX Mod KIT - Light Configurator</h1>
             </div>
         </div>
 
@@ -127,7 +127,7 @@
                                     <span id="visible-count">0</span> materials displayed
                                 </div>
                                 <div class="text-green-800 font-bold text-lg">
-                                    Page total: € <span id="total-price">0.00</span>
+                                    Page Total: € <span id="total-price">0.00</span>
                                 </div>
                             </div>
                         </div>
@@ -198,12 +198,13 @@
             let headers = [];
             let currentPage = 1;
             let rowsPerPage = 30; // 30 rows per page
-            let filteredData = [];
+            let filteredData = []; // Start empty - will be populated only when filters are selected
             let ruleFields = {}; // Will store field names and their possible values
             let activeFilters = {}; // Will store currently selected filter values
             let availableFilters = {}; // Will store available filter values based on current selection
             let debugLog = [];
             let showRegolaColumn = false; // Toggle for REGOLA column visibility
+            let startWithEmptyList = true; // New behavior: start with empty materials list
             // Price calculation will be done on visible rows only
 
             // Setup debug panel
@@ -342,7 +343,7 @@
                     csvData.push(row);
                 }
 
-                filteredData = [...csvData];
+                // Don't populate filteredData initially - keep it empty until filters are selected
                 addDebugMessage(`CSV loaded: ${csvData.length} rows, ${headers.length} columns`);
             }
 
@@ -373,9 +374,12 @@
                         addDebugMessage(`  ${field}: [${ruleFields[field].join(', ')}]`);
                     });
                     
-                    // Initialize filters with all data available
+                    // Initialize filters with empty materials list
                     activeFilters = {};
-                    filteredData = [...csvData];
+                    filteredData = []; // Start empty - materials will appear only when filters are selected
+                    
+                    // Ensure table displays empty state immediately
+                    displayTable();
                     
                     addDebugMessage("Updating available filters...");
                     updateAvailableFilters();
@@ -472,12 +476,42 @@
                 
                 tableHeader.appendChild(headerRow);
                 
-                // Display initial data
-                displayTable();
+                // Don't display data initially - table will be empty until filters are selected
             }
 
             function displayTable() {
                 tableBody.innerHTML = '';
+                
+                // Show empty state message when no filters are selected or no results
+                if (filteredData.length === 0) {
+                    const emptyRow = document.createElement('tr');
+                    const emptyCell = document.createElement('td');
+                    emptyCell.colSpan = headers.filter(h => {
+                        if (h.toLowerCase() === 'type') return false;
+                        if (h.toLowerCase() === 'regola' && !showRegolaColumn) return false;
+                        return true;
+                    }).length;
+                    emptyCell.className = 'py-12 px-4 text-center text-gray-500';
+                    
+                    if (Object.keys(activeFilters).length === 0) {
+                        emptyCell.innerHTML = `
+                            <div class="text-lg mb-2">🎯</div>
+                            <div class="font-medium">Select filter criteria to view materials</div>
+                            <div class="text-sm mt-1">Use the filters on the left to find matching materials</div>
+                        `;
+                    } else {
+                        emptyCell.innerHTML = `
+                            <div class="text-lg mb-2">🔍</div>
+                            <div class="font-medium">No materials match the selected criteria</div>
+                            <div class="text-sm mt-1">Try adjusting your filter selection</div>
+                        `;
+                    }
+                    
+                    emptyRow.appendChild(emptyCell);
+                    tableBody.appendChild(emptyRow);
+                    updatePriceCalculation();
+                    return;
+                }
                 
                 const startIndex = (currentPage - 1) * rowsPerPage;
                 const endIndex = Math.min(startIndex + rowsPerPage, filteredData.length);
@@ -552,9 +586,9 @@
 
                 // Reset filters button
                 resetFiltersBtn.addEventListener('click', () => {
-                    addDebugMessage("=== RESET FILTRI ===");
+                    addDebugMessage("=== RESET FILTERS ===");
                     activeFilters = {};
-                    filteredData = [...csvData];
+                    filteredData = []; // Reset to empty list
                     currentPage = 1;
                     
                     updateActiveFiltersDisplay();
@@ -566,19 +600,23 @@
                     updatePagination();
                     createFilters(); // Recreate filters to reset selections
                     
-                    addDebugMessage("Reset completato");
+                    addDebugMessage("Reset completed");
                 });
 
                 // Toggle REGOLA column visibility
                 toggleRegolaBtn.addEventListener('click', () => {
                     showRegolaColumn = !showRegolaColumn;
-                    toggleRegolaBtn.textContent = showRegolaColumn ? '📋 Nascondi Regole' : '📋 Mostra Regole';
+                    toggleRegolaBtn.textContent = showRegolaColumn ? '📋 Hide Rules' : '📋 Show Rules';
                     createTable(); // Recreate table with/without REGOLA column
                 });
             }
 
             function updateRowCount() {
-                rowCount.textContent = `${filteredData.length} rows`;
+                if (filteredData.length === 0 && Object.keys(activeFilters).length === 0) {
+                    rowCount.textContent = `Select filters to view materials`;
+                } else {
+                    rowCount.textContent = `${filteredData.length} materials`;
+                }
             }
 
             function updatePagination() {
@@ -674,7 +712,7 @@
                 let cleanValues = valuesPart.replace(/\s+(AND|OR)\s*$/i, '').trim();
                 
                 if (ruleCount <= 5) {
-                    addDebugMessage(`    Elaborazione valori per ${field}: "${cleanValues}"`);
+                    addDebugMessage(`    Processing values for ${field}: "${cleanValues}"`);
                 }
                 
                 // Handle parentheses for multiple values
@@ -739,20 +777,20 @@
             }
 
             function createFilters() {
-                addDebugMessage("=== CREAZIONE FILTRI ===");
+                addDebugMessage("=== CREATING FILTERS ===");
                 
                 if (Object.keys(ruleFields).length === 0) {
-                    addDebugMessage("ERRORE: Nessun campo trovato in ruleFields!", "error");
+                    addDebugMessage("ERROR: No fields found in ruleFields!", "error");
                     return;
                 }
 
                 const container = document.getElementById('filter-container');
                 container.innerHTML = '';
                 
-                addDebugMessage(`Creando filtri per ${Object.keys(ruleFields).length} campi`);
+                addDebugMessage(`Creating filters for ${Object.keys(ruleFields).length} fields`);
 
                 Object.keys(ruleFields).forEach(field => {
-                    addDebugMessage(`Creando filtro per campo: ${field}`);
+                    addDebugMessage(`Creating filter for field: ${field}`);
                     
                     const fieldDiv = document.createElement('div');
                     fieldDiv.className = 'bg-gray-50 p-4 rounded-lg border';
@@ -768,16 +806,16 @@
                     const availableValues = availableFilters[field] || [];
                     const allValues = ruleFields[field] || [];
                     
-                    addDebugMessage(`  Campo ${field}: ${allValues.length} valori totali, ${availableValues.length} disponibili`);
-                    addDebugMessage(`  Valori totali: [${allValues.join(', ')}]`);
-                    addDebugMessage(`  Valori disponibili: [${availableValues.join(', ')}]`);
+                    addDebugMessage(`  Field ${field}: ${allValues.length} total values, ${availableValues.length} available`);
+                    addDebugMessage(`  Total values: [${allValues.join(', ')}]`);
+                    addDebugMessage(`  Available values: [${availableValues.join(', ')}]`);
                     
                     allValues.forEach(value => {
                         const button = document.createElement('button');
                         const isSelected = activeFilters[field] === value;
                         const isAvailable = availableValues.includes(value);
                         
-                        addDebugMessage(`    Valore "${value}": selected=${isSelected}, available=${isAvailable}`);
+                        addDebugMessage(`    Value "${value}": selected=${isSelected}, available=${isAvailable}`);
                         
                         if (isSelected) {
                             button.className = 'px-3 py-1 bg-indigo-600 text-white rounded-full text-sm font-medium';
@@ -792,15 +830,15 @@
                         
                         if (!button.disabled) {
                             button.addEventListener('click', () => {
-                                addDebugMessage(`Click su ${field}=${value}`);
+                                addDebugMessage(`Click on ${field}=${value}`);
                                 
                                 if (activeFilters[field] === value) {
                                     // Deselect
-                                    addDebugMessage(`Deselezionando ${field}=${value}`);
+                                    addDebugMessage(`Deselecting ${field}=${value}`);
                                     delete activeFilters[field];
                                 } else {
                                     // Select
-                                    addDebugMessage(`Selezionando ${field}=${value}`);
+                                    addDebugMessage(`Selecting ${field}=${value}`);
                                     activeFilters[field] = value;
                                 }
                                 
@@ -819,18 +857,18 @@
                     container.appendChild(fieldDiv);
                 });
                 
-                addDebugMessage("=== FINE CREAZIONE FILTRI ===");
+                addDebugMessage("=== END FILTER CREATION ===");
             }
 
             function updateAvailableFilters() {
-                addDebugMessage("=== AGGIORNAMENTO FILTRI DISPONIBILI ===");
+                addDebugMessage("=== UPDATING AVAILABLE FILTERS ===");
                 availableFilters = {};
                 
-                addDebugMessage(`Filtri attivi correnti: ${JSON.stringify(activeFilters)}`);
+                addDebugMessage(`Current active filters: ${JSON.stringify(activeFilters)}`);
                 
                 // For each field, calculate which values are available based on current filter selection
                 Object.keys(ruleFields).forEach(field => {
-                    addDebugMessage(`Calcolando valori disponibili per campo: ${field}`);
+                    addDebugMessage(`Calculating available values for field: ${field}`);
                     availableFilters[field] = new Set();
                     
                     let matchingRows = 0;
@@ -846,7 +884,7 @@
                         
                         // Only log first few rows to avoid spam
                         if (index < 3) {
-                            addDebugMessage(`  Riga ${index+1}: Controllo compatibilità con filtri: ${JSON.stringify(otherActiveFilters)}`);
+                            addDebugMessage(`  Row ${index+1}: Checking compatibility with filters: ${JSON.stringify(otherActiveFilters)}`);
                         }
                         
                         // Check if this row matches all OTHER active filters
@@ -858,37 +896,37 @@
                             if (ruleText && ruleText.trim() !== '') {
                                 const fieldValues = extractFieldValuesFromRule(ruleText, field);
                                 if (index < 3) {
-                                    addDebugMessage(`    Riga ${index+1} compatibile. Valori estratti per ${field}: [${fieldValues.join(', ')}]`);
+                                    addDebugMessage(`    Row ${index+1} compatible. Extracted values for ${field}: [${fieldValues.join(', ')}]`);
                                 }
                                 
                                 fieldValues.forEach(value => {
                                     if (value && value.trim()) {
                                         availableFilters[field].add(value.trim());
                                         if (index < 3) {
-                                            addDebugMessage(`      Aggiunto valore disponibile: "${value.trim()}"`);
+                                            addDebugMessage(`      Added available value: "${value.trim()}"`);
                                         }
                                     }
                                 });
                             } else if (index < 3) {
-                                addDebugMessage(`    Riga ${index+1} compatibile ma senza regola valida`);
+                                addDebugMessage(`    Row ${index+1} compatible but no valid rule`);
                             }
                         } else if (index < 3) {
-                            addDebugMessage(`    Riga ${index+1} NON compatibile con filtri attivi`);
+                            addDebugMessage(`    Row ${index+1} NOT compatible with active filters`);
                         }
                     });
                     
                     availableFilters[field] = Array.from(availableFilters[field]).sort();
-                    addDebugMessage(`  Campo ${field}: ${totalRowsChecked} righe controllate, ${matchingRows} righe compatibili, ${availableFilters[field].length} valori disponibili`);
-                    addDebugMessage(`  Valori disponibili: [${availableFilters[field].join(', ')}]`);
+                    addDebugMessage(`  Field ${field}: ${totalRowsChecked} rows checked, ${matchingRows} compatible rows, ${availableFilters[field].length} available values`);
+                    addDebugMessage(`  Available values: [${availableFilters[field].join(', ')}]`);
                     
-                    // If no filters are active, all values should be available
+                    // If no filters are active, all values should be available (but materials list stays empty)
                     if (Object.keys(activeFilters).length === 0) {
                         availableFilters[field] = [...ruleFields[field]];
-                        addDebugMessage(`  Nessun filtro attivo - tutti i valori disponibili per ${field}`);
+                        addDebugMessage(`  No active filters - all values available for ${field}`);
                     }
                 });
                 
-                addDebugMessage("=== FINE AGGIORNAMENTO FILTRI DISPONIBILI ===");
+                addDebugMessage("=== END UPDATING AVAILABLE FILTERS ===");
             }
 
             function extractFieldValuesFromRule(ruleText, targetField) {
@@ -1018,19 +1056,21 @@
 
             function applyFilters() {
                 if (Object.keys(activeFilters).length === 0) {
-                    filteredData = [...csvData];
+                    // No filters selected - keep materials list empty
+                    filteredData = [];
+                    addDebugMessage("No filters selected - materials list remains empty");
                 } else {
+                    // Apply filters and show matching materials
                     filteredData = csvData.filter(row => {
                         return matchesAllFilters(row, activeFilters);
                     });
+                    addDebugMessage(`Filters applied. ${filteredData.length} matching materials found.`);
                 }
                 
                 currentPage = 1;
                 displayTable();
                 updateRowCount();
                 updatePagination();
-                
-                addDebugMessage(`Filtri applicati. ${filteredData.length} righe corrispondenti.`);
             }
 
             // Price calculation functions removed - now calculated automatically on visible rows
@@ -1069,5 +1109,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'979f759dc1deee78',t:'MTc1NzAwOTU5Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97a36ff29528edb3',t:'MTc1NzA1MTMwMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
