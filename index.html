@@ -16,20 +16,24 @@
             </div>
         </div>
 
-        <!-- Upload Section -->
-        <div id="upload-section" class="bg-white rounded-2xl shadow-xl p-8 mb-8 transition-all duration-500">
+        <!-- Upload Section - Hidden by default, shown only on error -->
+        <div id="upload-section" class="hidden bg-white rounded-2xl shadow-xl p-8 mb-8 transition-all duration-500">
             
-            <!-- Auto-loading status -->
-            <div class="mb-6 p-4 bg-blue-50 rounded-lg">
-                <div id="csv-status" class="text-sm text-gray-600">Auto-loading rules in progress...</div>
+            <!-- Error message -->
+            <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div class="flex items-center mb-2">
+                    <div class="text-red-600 text-xl mr-2">⚠️</div>
+                    <div class="font-semibold text-red-800">CSV File Not Found</div>
+                </div>
+                <div id="csv-status" class="text-sm text-red-600">The file "regole-prodotto-WebApp-BX MOD KIT.csv" was not found in the application directory.</div>
             </div>
             
-            <!-- Manual upload fallback - hidden by default -->
-            <div id="manual-upload-section" class="hidden">
+            <!-- Manual upload -->
+            <div id="manual-upload-section">
                 <div id="drop-zone" class="border-2 border-dashed border-indigo-300 rounded-lg p-12 text-center cursor-pointer bg-indigo-50 hover:bg-indigo-100 transition-colors">
                     <div class="text-indigo-600 text-6xl mb-4">📁</div>
                     <p class="text-xl text-indigo-700 font-medium mb-2">Drag CSV file here</p>
-                    <p class="text-indigo-600 mb-4">or click to select</p>
+                    <p class="text-indigo-600 mb-4">or click to select "regole-prodotto-WebApp-BX MOD KIT.csv"</p>
                     <input type="file" id="file-input" class="hidden" accept=".csv">
                     <button id="select-file-btn" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
                         Select File
@@ -321,51 +325,36 @@
             function setupFileUpload() {
                 console.log('Setting up file upload...');
                 
-                // Show manual upload immediately as fallback
-                manualUploadSection.classList.remove('hidden');
-                setupManualUpload();
+                // Try to load the CSV file automatically from the same directory immediately
+                console.log('Attempting to load regole-prodotto-WebApp-BX MOD KIT.csv...');
                 
-                // Try to auto-load CSV first
-                csvStatus.textContent = 'Auto-loading sample data...';
-                csvStatus.className = 'text-sm text-blue-600';
-                
-                // Try to load the CSV file automatically from the same directory
-                setTimeout(() => {
-                    console.log('Attempting to load regole-prodotto-WebApp-BX MOD KIT.csv...');
-                    
-                    // Try to fetch the CSV file from the same directory
-                    fetch('./regole-prodotto-WebApp-BX MOD KIT.csv')
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error(`HTTP error! status: ${response.status}`);
-                            }
-                            return response.text();
-                        })
-                        .then(csvContent => {
-                            console.log('CSV file loaded successfully from local directory');
-                            console.log('CSV content length:', csvContent.length);
-                            
-                            parseCSVContent(csvContent);
-                            
-                            csvStatus.textContent = 'CSV file loaded successfully! ✅';
-                            csvStatus.className = 'text-sm text-green-600';
-                            
-                            // Hide manual upload and show data
-                            setTimeout(() => {
-                                console.log('Showing data section...');
-                                manualUploadSection.classList.add('hidden');
-                                showDataSection();
-                            }, 1000);
-                        })
-                        .catch(error => {
-                            console.error('Failed to load CSV file:', error);
-                            csvStatus.textContent = 'CSV file not found in directory. Please upload manually.';
-                            csvStatus.className = 'text-sm text-orange-600';
-                            
-                            // Keep manual upload visible as fallback
-                            console.log('Keeping manual upload visible as fallback');
-                        });
-                }, 1500);
+                // Try to fetch the CSV file from the same directory
+                fetch('./regole-prodotto-WebApp-BX MOD KIT.csv')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.text();
+                    })
+                    .then(csvContent => {
+                        console.log('CSV file loaded successfully from local directory');
+                        console.log('CSV content length:', csvContent.length);
+                        
+                        parseCSVContent(csvContent);
+                        
+                        // Show data section immediately
+                        console.log('Showing data section...');
+                        showDataSection();
+                    })
+                    .catch(error => {
+                        console.error('Failed to load CSV file:', error);
+                        
+                        // Show upload section only on error
+                        uploadSection.classList.remove('hidden');
+                        setupManualUpload();
+                        
+                        console.log('Showing manual upload due to error');
+                    });
             }
 
             function setupManualUpload() {
@@ -459,7 +448,7 @@
             function showDataSection() {
                 updateDebugStatus("Showing data section...");
                 loadingElement.classList.add('hidden');
-                uploadSection.classList.add('hidden'); // Hide upload section completely
+                uploadSection.classList.add('hidden'); // Hide upload section (it was already hidden unless error)
                 dataSection.classList.remove('hidden');
                 
                 createTable();
@@ -1746,5 +1735,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97a56c39a39a1b6f',t:'MTc1NzA3MjEyMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97a57b8ad547bdd9',t:'MTc1NzA3Mjc0OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
