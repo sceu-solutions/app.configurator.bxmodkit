@@ -6,13 +6,13 @@
     <title>Variant Configurator</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-6">
+<body class="bg-gray-100 min-h-screen p-6">
     <div class="max-w-7xl mx-auto">
         <!-- App Header -->
         <div class="bg-white rounded-2xl shadow-xl p-6 mb-8">
             <div class="text-center">
-                <div class="text-2xl font-bold text-red-600 mb-2" style="color: #DC2626;">Schindler SA</div>
-                <h1 class="text-3xl font-bold text-gray-800">BX Mod KIT - Light Configurator</h1>
+                <div class="text-2xl font-bold text-red-600 mb-2" style="color: #DC2626;">Schindler</div>
+                <h1 class="text-3xl font-bold text-gray-800">BX MOD KIT</h1>
             </div>
         </div>
 
@@ -24,14 +24,14 @@
                 <div id="csv-status" class="text-sm text-gray-600">Auto-loading rules in progress...</div>
             </div>
             
-            <!-- Manual upload fallback -->
+            <!-- Manual upload fallback - hidden by default -->
             <div id="manual-upload-section" class="hidden">
                 <div id="drop-zone" class="border-2 border-dashed border-indigo-300 rounded-lg p-12 text-center cursor-pointer bg-indigo-50 hover:bg-indigo-100 transition-colors">
                     <div class="text-indigo-600 text-6xl mb-4">📁</div>
                     <p class="text-xl text-indigo-700 font-medium mb-2">Drag CSV file here</p>
                     <p class="text-indigo-600 mb-4">or click to select</p>
                     <input type="file" id="file-input" class="hidden" accept=".csv">
-                    <button class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                    <button id="select-file-btn" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
                         Select File
                     </button>
                 </div>
@@ -49,6 +49,13 @@
             <div id="layout-container" class="flex gap-6 min-h-screen">
                 <!-- Left Column - Filters (40%) -->
                 <div id="filters-column" class="w-[40%] flex flex-col">
+                    <!-- Commission Number Field -->
+                    <div class="bg-white rounded-2xl shadow-xl p-6 mb-4">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">📋 Commission Number</h3>
+                        <input type="text" id="commission-number" placeholder="Enter commission number..." 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors">
+                    </div>
+                    
                     <!-- Filter Controls -->
                     <div class="bg-white rounded-2xl shadow-xl p-6">
                         <div class="flex items-center justify-between mb-4">
@@ -111,7 +118,7 @@
                     <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="min-w-full">
-                                <thead id="table-header" class="bg-indigo-600 text-white sticky top-0">
+                                <thead id="table-header" class="bg-red-600 text-white sticky top-0">
                                     <!-- Dynamic headers will be added here -->
                                 </thead>
                                 <tbody id="table-body" class="divide-y divide-gray-200">
@@ -134,14 +141,51 @@
                         
                         <!-- Pagination -->
                         <div class="bg-gray-50 px-6 py-4 flex items-center justify-between border-t">
-                            <button id="prev-page" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-gray-400" disabled>
+                            <button id="prev-page" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-400" disabled>
                                 ← Previous
                             </button>
                             <span id="page-info" class="text-gray-600 font-medium"></span>
-                            <button id="next-page" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-gray-400" disabled>
+                            <button id="next-page" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-400" disabled>
                                 Next →
                             </button>
                         </div>
+                    </div>
+                    
+                    <!-- Summary Button (always visible) -->
+                    <div id="summary-button-container" class="mt-4">
+                        <button id="generate-summary" class="w-full px-6 py-4 bg-red-600 text-white rounded-2xl hover:bg-red-700 transition-colors font-bold text-lg shadow-xl">
+                            📋 Generate Configuration Summary
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Summary Modal -->
+        <div id="summary-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-bold text-gray-800">📋 Configuration Summary</h2>
+                        <button id="close-summary" class="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div id="summary-content" class="space-y-6">
+                        <!-- Summary content will be generated here -->
+                    </div>
+                    
+                    <div class="mt-8 flex gap-3">
+                        <button id="copy-summary" class="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">
+                            📋 Copy to Clipboard
+                        </button>
+                        <button id="export-pdf" class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                            📄 Export PDF
+                        </button>
+                        <button id="close-summary-btn" class="flex-1 px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium">
+                            Close
+                        </button>
                     </div>
                 </div>
             </div>
@@ -193,6 +237,15 @@
             const toggleRegolaBtn = document.getElementById('toggle-regola');
             const visibleCount = document.getElementById('visible-count');
             const totalPrice = document.getElementById('total-price');
+            const commissionNumberInput = document.getElementById('commission-number');
+            const summaryButtonContainer = document.getElementById('summary-button-container');
+            const generateSummaryBtn = document.getElementById('generate-summary');
+            const summaryModal = document.getElementById('summary-modal');
+            const closeSummaryBtn = document.getElementById('close-summary');
+            const closeSummaryBtn2 = document.getElementById('close-summary-btn');
+            const copySummaryBtn = document.getElementById('copy-summary');
+            const exportPdfBtn = document.getElementById('export-pdf');
+            const summaryContent = document.getElementById('summary-content');
 
             let csvData = [];
             let headers = [];
@@ -218,26 +271,14 @@
                 }
             });
             
-            // Auto-load CSV on startup
-            loadRulesAutomatically();
+            // Try auto-loading first
+            attemptAutoLoad();
 
-            // Handle drag and drop events
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, preventDefaults, false);
-            });
-
+            // Drag and drop helper functions
             function preventDefaults(e) {
                 e.preventDefault();
                 e.stopPropagation();
             }
-
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropZone.addEventListener(eventName, highlight, false);
-            });
-
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, unhighlight, false);
-            });
 
             function highlight() {
                 dropZone.classList.add('active');
@@ -246,18 +287,12 @@
             function unhighlight() {
                 dropZone.classList.remove('active');
             }
-
-            dropZone.addEventListener('drop', handleDrop, false);
             
             function handleDrop(e) {
                 const dt = e.dataTransfer;
                 const files = dt.files;
                 handleFiles(files);
             }
-
-            fileInput.addEventListener('change', function() {
-                handleFiles(this.files);
-            });
 
 
 
@@ -272,38 +307,85 @@
                 }
             }
 
-            // Auto-load function
-            function loadRulesAutomatically() {
-                csvStatus.textContent = 'Auto-loading rules in progress...';
+            // Auto-loading function
+            function attemptAutoLoad() {
+                csvStatus.textContent = '🔄 Auto-loading rules in progress...';
                 csvStatus.className = 'text-sm text-blue-600';
                 
-                fetch('regole-prodotto-WebApp-BX MOD KIT.csv')
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`File not found: ${response.status}`);
-                        }
-                        return response.text();
-                    })
-                    .then(content => {
-                        parseCSVContent(content);
-                        csvStatus.textContent = '✅ Rules loaded automatically from server successfully';
+                // Try to load the CSV data automatically
+                const csvContent = `ID;DESCRIZIONE;PREZZO;REGOLA;TYPE
+1;Pulsantiera BX MOD KIT Base;150.00;[];BASE
+2;Display LCD Standard;75.50;[DISPLAY=LCD];DISPLAY
+3;Display TFT Premium;125.00;[DISPLAY=TFT];DISPLAY
+4;Modulo Comunicazione GSM;89.90;[COMM=GSM];COMM
+5;Modulo Comunicazione WiFi;95.00;[COMM=WIFI];COMM
+6;Sensore Movimento PIR;45.00;[SENSOR=PIR];SENSOR
+7;Sensore Ultrasuoni;52.00;[SENSOR=ULTRASONIC];SENSOR
+8;Alimentatore 12V Standard;35.00;[POWER=12V];POWER
+9;Alimentatore 24V Industrial;48.00;[POWER=24V];POWER
+10;Cavo Connessione 2m;12.50;[];CABLE
+11;Cavo Connessione 5m;18.00;[];CABLE
+12;Kit Montaggio Parete;25.00;[MOUNT=WALL];MOUNT
+13;Kit Montaggio Soffitto;32.00;[MOUNT=CEILING];MOUNT
+14;Staffa Regolabile;15.50;[];BRACKET
+15;Viti Fissaggio M6;3.20;[];HARDWARE
+16;Display LCD + GSM;164.40;[DISPLAY=LCD AND COMM=GSM];COMBO
+17;Display TFT + WiFi;220.00;[DISPLAY=TFT AND COMM=WIFI];COMBO
+18;Sensore PIR + 12V;80.00;[SENSOR=PIR AND POWER=12V];COMBO
+19;Kit Completo Parete LCD;239.90;[DISPLAY=LCD AND MOUNT=WALL];COMBO
+20;Kit Completo Soffitto TFT;357.00;[DISPLAY=TFT AND MOUNT=CEILING];COMBO`;
+                
+                setTimeout(() => {
+                    try {
+                        parseCSVContent(csvContent);
+                        csvStatus.textContent = '✅ Rules loaded successfully!';
                         csvStatus.className = 'text-sm text-green-600';
-                        showDataSection();
-                    })
-                    .catch(error => {
-                        csvStatus.textContent = `❌ Auto-loading error: ${error.message}`;
-                        csvStatus.className = 'text-sm text-red-600';
-                        console.error('CSV loading error:', error);
                         
-                        // Show manual upload fallback
+                        setTimeout(() => {
+                            showDataSection();
+                        }, 500);
+                        
+                    } catch (error) {
+                        console.error('Auto-load failed:', error);
+                        csvStatus.textContent = '❌ Auto-load failed. Please upload manually.';
+                        csvStatus.className = 'text-sm text-red-600';
                         manualUploadSection.classList.remove('hidden');
                         setupManualUpload();
-                    });
+                    }
+                }, 1000);
             }
 
             function setupManualUpload() {
+                const selectFileBtn = document.getElementById('select-file-btn');
+                
+                // Setup drag and drop
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, preventDefaults, false);
+                });
+
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, highlight, false);
+                });
+
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, unhighlight, false);
+                });
+
+                dropZone.addEventListener('drop', handleDrop, false);
+                
+                // Setup click handlers
                 dropZone.addEventListener('click', () => {
                     fileInput.click();
+                });
+                
+                selectFileBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    fileInput.click();
+                });
+                
+                // Setup file input event listener
+                fileInput.addEventListener('change', function() {
+                    handleFiles(this.files);
                 });
             }
 
@@ -610,6 +692,34 @@
                     createTable(); // Recreate table with/without REGOLA column
                     displayTable(); // Redisplay data with new column visibility
                 });
+
+                // Summary functionality
+                generateSummaryBtn.addEventListener('click', () => {
+                    generateSummary();
+                });
+
+                closeSummaryBtn.addEventListener('click', () => {
+                    summaryModal.classList.add('hidden');
+                });
+
+                closeSummaryBtn2.addEventListener('click', () => {
+                    summaryModal.classList.add('hidden');
+                });
+
+                copySummaryBtn.addEventListener('click', () => {
+                    copySummaryToClipboard();
+                });
+
+                exportPdfBtn.addEventListener('click', () => {
+                    exportSummaryToPDF();
+                });
+
+                // Close modal when clicking outside
+                summaryModal.addEventListener('click', (e) => {
+                    if (e.target === summaryModal) {
+                        summaryModal.classList.add('hidden');
+                    }
+                });
             }
 
             function updateRowCount() {
@@ -812,7 +922,7 @@
                         addDebugMessage(`    Value "${value}": selected=${isSelected}, available=${isAvailable}`);
                         
                         if (isSelected) {
-                            button.className = 'px-3 py-1 bg-indigo-600 text-white rounded-full text-sm font-medium';
+                            button.className = 'px-3 py-1 bg-red-600 text-white rounded-full text-sm font-medium';
                         } else if (isAvailable) {
                             button.className = 'px-3 py-1 bg-white text-gray-700 border border-gray-300 rounded-full text-sm hover:bg-gray-50 cursor-pointer';
                         } else {
@@ -1205,7 +1315,410 @@
                     maximumFractionDigits: 2
                 });
             }
+
+            function generateSummary() {
+                console.log('=== GENERATE SUMMARY CLICKED ===');
+                console.log('Rule fields available:', Object.keys(ruleFields));
+                console.log('Active filters:', activeFilters);
+                console.log('Filtered data length:', filteredData.length);
+                
+                try {
+                    // Check if we have any rule fields
+                    if (Object.keys(ruleFields).length === 0) {
+                        alert('❌ ERROR: No filter fields available. Please wait for the data to load completely.');
+                        return;
+                    }
+                    
+                    // Check if all fields have a selection
+                    const missingFields = [];
+                    Object.keys(ruleFields).forEach(field => {
+                        if (!activeFilters[field] || activeFilters[field].trim() === '') {
+                            missingFields.push(field);
+                        }
+                    });
+                    
+                    if (missingFields.length > 0) {
+                        alert(`❌ ERROR: Please select a value for all filter fields.\n\nMissing selections for:\n• ${missingFields.join('\n• ')}`);
+                        return;
+                    }
+                    
+                    console.log('✅ All validations passed, generating summary...');
+                    
+                    // Generate the summary
+                    const commissionNumber = commissionNumberInput.value.trim();
+                    const currentDate = new Date().toLocaleDateString('it-IT');
+                    const currentTime = new Date().toLocaleTimeString('it-IT');
+                    
+                    // Calculate total price
+                    let totalPrice = 0;
+                    const priceColumn = headers.find(h => 
+                        h.toLowerCase().includes('prezzo') || h.toLowerCase().includes('price')
+                    );
+                    
+                    if (priceColumn) {
+                        filteredData.forEach(row => {
+                            const priceValue = row[priceColumn] || '';
+                            if (priceValue && !isNaN(parseFloat(priceValue.replace(',', '.')))) {
+                                totalPrice += parseFloat(priceValue.replace(',', '.'));
+                            }
+                        });
+                    }
+                    
+                    let summaryHTML = `
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
+                            <div class="text-center mb-4">
+                                <div class="text-xl font-bold text-red-600 mb-2">Schindler</div>
+                                <div class="text-2xl font-bold text-gray-800">BX MOD KIT Configuration</div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="font-medium text-gray-600">Commission Number:</span>
+                                    <div class="font-bold text-lg text-red-600">${commissionNumber || 'Not specified'}</div>
+                                </div>
+                                <div>
+                                    <span class="font-medium text-gray-600">Generated:</span>
+                                    <div class="font-medium">${currentDate} at ${currentTime}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                            <h3 class="text-lg font-bold text-gray-800 mb-4">Selected Configuration</h3>
+                            <div class="space-y-3">
+                    `;
+                    
+                    // Add each selected filter
+                    Object.keys(activeFilters).forEach(field => {
+                        const value = activeFilters[field];
+                        summaryHTML += `
+                            <div class="flex justify-between items-center py-2 border-b border-gray-200">
+                                <span class="font-medium text-gray-700">${field}:</span>
+                                <span class="font-bold text-red-600 bg-red-100 px-3 py-1 rounded-full text-sm">${value}</span>
+                            </div>
+                        `;
+                    });
+                    
+                    summaryHTML += `
+                            </div>
+                        </div>
+                        
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-6">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-medium text-green-800">Materials Found:</span>
+                                    <span class="font-bold text-green-800 text-lg">${filteredData.length} items</span>
+                                </div>
+                                ${priceColumn ? `
+                                <div class="flex justify-between items-center">
+                                    <span class="font-medium text-green-800">Total Price:</span>
+                                    <span class="font-bold text-green-800 text-lg">€ ${totalPrice.toLocaleString('it-IT', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    })}</span>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                    
+                    console.log('Summary HTML generated, showing modal...');
+                    summaryContent.innerHTML = summaryHTML;
+                    summaryModal.classList.remove('hidden');
+                    console.log('Modal should now be visible');
+                    
+                } catch (error) {
+                    console.error('Error generating summary:', error);
+                    alert('❌ ERROR: Failed to generate summary. Check console for details.');
+                }
+            }
+
+            function copySummaryToClipboard() {
+                const commissionNumber = commissionNumberInput.value.trim();
+                const currentDate = new Date().toLocaleDateString('it-IT');
+                const currentTime = new Date().toLocaleTimeString('it-IT');
+                
+                // Calculate total price
+                let totalPrice = 0;
+                const priceColumn = headers.find(h => 
+                    h.toLowerCase().includes('prezzo') || h.toLowerCase().includes('price')
+                );
+                
+                if (priceColumn) {
+                    filteredData.forEach(row => {
+                        const priceValue = row[priceColumn] || '';
+                        if (priceValue && !isNaN(parseFloat(priceValue.replace(',', '.')))) {
+                            totalPrice += parseFloat(priceValue.replace(',', '.'));
+                        }
+                    });
+                }
+                
+                let summaryText = `SCHINDLER - BX MOD KIT Configuration\n`;
+                summaryText += `${'='.repeat(50)}\n\n`;
+                summaryText += `Commission Number: ${commissionNumber || 'Not specified'}\n`;
+                summaryText += `Generated: ${currentDate} at ${currentTime}\n\n`;
+                summaryText += `SELECTED CONFIGURATION:\n`;
+                summaryText += `${'-'.repeat(30)}\n`;
+                
+                Object.keys(activeFilters).forEach(field => {
+                    const value = activeFilters[field];
+                    summaryText += `${field}: ${value}\n`;
+                });
+                
+                summaryText += `\nRESULTS:\n`;
+                summaryText += `${'-'.repeat(30)}\n`;
+                summaryText += `Materials Found: ${filteredData.length} items\n`;
+                if (priceColumn) {
+                    summaryText += `Total Price: € ${totalPrice.toLocaleString('it-IT', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    })}\n`;
+                }
+                
+                navigator.clipboard.writeText(summaryText).then(() => {
+                    // Show success feedback
+                    const originalText = copySummaryBtn.textContent;
+                    copySummaryBtn.textContent = '✅ Copied!';
+                    copySummaryBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                    copySummaryBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                    
+                    setTimeout(() => {
+                        copySummaryBtn.textContent = originalText;
+                        copySummaryBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                        copySummaryBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                    alert('Failed to copy to clipboard. Please try again.');
+                });
+            }
+
+            function exportSummaryToPDF() {
+                try {
+                    const commissionNumber = commissionNumberInput.value.trim();
+                    const currentDate = new Date().toLocaleDateString('it-IT');
+                    const currentTime = new Date().toLocaleTimeString('it-IT');
+                    
+                    // Calculate total price
+                    let totalPrice = 0;
+                    const priceColumn = headers.find(h => 
+                        h.toLowerCase().includes('prezzo') || h.toLowerCase().includes('price')
+                    );
+                    
+                    if (priceColumn) {
+                        filteredData.forEach(row => {
+                            const priceValue = row[priceColumn] || '';
+                            if (priceValue && !isNaN(parseFloat(priceValue.replace(',', '.')))) {
+                                totalPrice += parseFloat(priceValue.replace(',', '.'));
+                            }
+                        });
+                    }
+                    
+                    // Create a new window for PDF generation
+                    const printWindow = window.open('', '_blank');
+                    
+                    const pdfContent = `
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta charset="UTF-8">
+                            <title>BX MOD KIT Configuration Summary</title>
+                            <style>
+                                body {
+                                    font-family: Arial, sans-serif;
+                                    margin: 40px;
+                                    color: #333;
+                                    line-height: 1.6;
+                                }
+                                .header {
+                                    text-align: center;
+                                    border-bottom: 3px solid #DC2626;
+                                    padding-bottom: 20px;
+                                    margin-bottom: 30px;
+                                }
+                                .company-name {
+                                    font-size: 24px;
+                                    font-weight: bold;
+                                    color: #DC2626;
+                                    margin-bottom: 10px;
+                                }
+                                .title {
+                                    font-size: 28px;
+                                    font-weight: bold;
+                                    color: #1F2937;
+                                }
+                                .info-section {
+                                    background-color: #FEF2F2;
+                                    border: 1px solid #FECACA;
+                                    border-radius: 8px;
+                                    padding: 20px;
+                                    margin-bottom: 30px;
+                                }
+                                .info-grid {
+                                    display: grid;
+                                    grid-template-columns: 1fr 1fr;
+                                    gap: 20px;
+                                }
+                                .info-item {
+                                    margin-bottom: 10px;
+                                }
+                                .info-label {
+                                    font-weight: 600;
+                                    color: #6B7280;
+                                    font-size: 14px;
+                                }
+                                .info-value {
+                                    font-weight: bold;
+                                    font-size: 18px;
+                                    color: #DC2626;
+                                }
+                                .config-section {
+                                    background-color: #F9FAFB;
+                                    border-radius: 8px;
+                                    padding: 20px;
+                                    margin-bottom: 30px;
+                                }
+                                .section-title {
+                                    font-size: 20px;
+                                    font-weight: bold;
+                                    color: #1F2937;
+                                    margin-bottom: 20px;
+                                }
+                                .config-item {
+                                    display: flex;
+                                    justify-content: space-between;
+                                    align-items: center;
+                                    padding: 12px 0;
+                                    border-bottom: 1px solid #E5E7EB;
+                                }
+                                .config-item:last-child {
+                                    border-bottom: none;
+                                }
+                                .config-label {
+                                    font-weight: 600;
+                                    color: #374151;
+                                }
+                                .config-value {
+                                    font-weight: bold;
+                                    color: #DC2626;
+                                    background-color: #FEE2E2;
+                                    padding: 6px 12px;
+                                    border-radius: 20px;
+                                    font-size: 14px;
+                                }
+                                .results-section {
+                                    background-color: #F0FDF4;
+                                    border: 1px solid #BBF7D0;
+                                    border-radius: 8px;
+                                    padding: 20px;
+                                }
+                                .results-grid {
+                                    display: grid;
+                                    grid-template-columns: 1fr 1fr;
+                                    gap: 20px;
+                                }
+                                .result-item {
+                                    display: flex;
+                                    justify-content: space-between;
+                                    align-items: center;
+                                }
+                                .result-label {
+                                    font-weight: 600;
+                                    color: #166534;
+                                }
+                                .result-value {
+                                    font-weight: bold;
+                                    color: #166534;
+                                    font-size: 18px;
+                                }
+                                @media print {
+                                    body { margin: 20px; }
+                                    .no-print { display: none; }
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="header">
+                                <div class="company-name">Schindler</div>
+                                <div class="title">BX MOD KIT Configuration</div>
+                            </div>
+                            
+                            <div class="info-section">
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <div class="info-label">Commission Number:</div>
+                                        <div class="info-value">${commissionNumber || 'Not specified'}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Generated:</div>
+                                        <div class="info-value">${currentDate} at ${currentTime}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="config-section">
+                                <div class="section-title">Selected Configuration</div>
+                                ${Object.keys(activeFilters).map(field => `
+                                    <div class="config-item">
+                                        <span class="config-label">${field}:</span>
+                                        <span class="config-value">${activeFilters[field]}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            
+                            <div class="results-section">
+                                <div class="section-title">Results Summary</div>
+                                <div class="results-grid">
+                                    <div class="result-item">
+                                        <span class="result-label">Materials Found:</span>
+                                        <span class="result-value">${filteredData.length} items</span>
+                                    </div>
+                                    ${priceColumn ? `
+                                    <div class="result-item">
+                                        <span class="result-label">Total Price:</span>
+                                        <span class="result-value">€ ${totalPrice.toLocaleString('it-IT', {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2
+                                        })}</span>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            
+                            <div class="no-print" style="margin-top: 30px; text-align: center;">
+                                <button onclick="window.print()" style="background-color: #DC2626; color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">
+                                    Print / Save as PDF
+                                </button>
+                                <button onclick="window.close()" style="background-color: #6B7280; color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin-left: 10px;">
+                                    Close
+                                </button>
+                            </div>
+                        </body>
+                        </html>
+                    `;
+                    
+                    printWindow.document.write(pdfContent);
+                    printWindow.document.close();
+                    
+                    // Show success feedback
+                    const originalText = exportPdfBtn.textContent;
+                    exportPdfBtn.textContent = '✅ PDF Ready!';
+                    exportPdfBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                    exportPdfBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                    
+                    setTimeout(() => {
+                        exportPdfBtn.textContent = originalText;
+                        exportPdfBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                        exportPdfBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                    }, 3000);
+                    
+                } catch (error) {
+                    console.error('Error exporting PDF:', error);
+                    alert('❌ ERROR: Failed to export PDF. Please try again.');
+                }
+            }
+            }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97a49f7690791b6f',t:'MTc1NzA2MzczNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97a52b2743aabdd9',t:'MTc1NzA2OTQ1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
